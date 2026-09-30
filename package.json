@@ -14,10 +14,10 @@
     "watch:client": "node scripts/build-client.js --watch",
     "start": "node dist/src/server/index.js",
     "dev": "npm run build && node dist/src/server/index.js",
-    "test": "npm run build:server && node --test dist/test/engine dist/test/client dist/test/integration",
-    "test:engine": "npm run build:server && node --test dist/test/engine",
-    "test:client": "npm run build:server && node --test dist/test/client",
-    "test:integration": "npm run build:server && node --test dist/test/integration",
+    "test": "npm run build:server && node --test dist/test/*/*.test.js",
+    "test:engine": "npm run build:server && node --test dist/test/engine/*.test.js",
+    "test:client": "npm run build:server && node --test dist/test/client/*.test.js",
+    "test:integration": "npm run build:server && node --test dist/test/integration/*.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.client.json"
   },
   "dependencies": {

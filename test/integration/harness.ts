@@ -162,7 +162,8 @@ export class TestClient {
     });
   }
 
-  waitUntil(predicate: () => boolean, label = 'condition', timeoutMs = 5000): Promise<void> {
+  // Generous: these guard against a hang, they are not timing assertions.
+  waitUntil(predicate: () => boolean, label = 'condition', timeoutMs = 20000): Promise<void> {
     if (predicate()) return Promise.resolve();
     return new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -188,7 +189,7 @@ export class TestClient {
     // Mirrors the client: only turn-exclusive commands pin a revision.
     const expectedRevision = options.expectedRevision === undefined ? null : options.expectedRevision;
     const promise = new Promise<Record<string, unknown>>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(`no response to ${action}`)), 5000);
+      const timer = setTimeout(() => reject(new Error(`no response to ${action}`)), 20000);
       this.acks.set(commandId, (value) => {
         clearTimeout(timer);
         resolve(value);

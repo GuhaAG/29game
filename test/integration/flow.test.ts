@@ -22,11 +22,17 @@ function byStrength(cards: string[]): string[] {
 async function driveUntil(
   clients: TestClient[],
   done: () => boolean,
-  options: { revealOnce?: boolean; revealEveryHand?: boolean; teamAAlwaysBids?: boolean } = {},
+  options: {
+    revealOnce?: boolean;
+    revealEveryHand?: boolean;
+    teamBAlwaysBids?: boolean;
+    /** The contract side throws every trick, so the hand fails predictably. */
+    forceContractFailure?: boolean;
+  } = {},
 ): Promise<void> {
   let revealed = false;
   const revealedHands = new Set<number>();
-  for (let step = 0; step < 4000 && !done(); step += 1) {
+  for (let step = 0; step < 20000 && !done(); step += 1) {
     let acted = false;
     for (const client of clients) {
       const match = client.snapshot?.match;
@@ -52,7 +58,7 @@ async function driveUntil(
       if (actions.bids?.length > 0) {
         // Optionally keep the contract on one team, so the match reaches a
         // boundary in a handful of hands instead of wandering there.
-        const wantsContract = options.teamAAlwaysBids ? (client.seat as number) % 2 === 0 : true;
+        const wantsContract = options.teamBAlwaysBids ? (client.seat as number) % 2 === 1 : true;
         const takeIt = wantsContract && match.hand.auction.highBid === null;
         await client.send(takeIt ? 'bid' : 'pass', { value: 16 });
         acted = true;
@@ -89,7 +95,11 @@ async function driveUntil(
         // usually make and the score moves in one direction.
         const ranked = byStrength(actions.legalCards as string[]);
         const bidderTeam = match.hand.bidderTeam as number | null;
-        const playHigh = bidderTeam === null || (client.seat as number) % 2 === bidderTeam;
+        const onContractSide = bidderTeam !== null && (client.seat as number) % 2 === bidderTeam;
+        // Making a contract depends on the deal; throwing one does not. The
+        // contract side plays its lowest card and the defenders their highest,
+        // so the hand fails and the score moves one way every time.
+        const playHigh = options.forceContractFailure ? !onContractSide : onContractSide || bidderTeam === null;
         await client.send('playCard', { card: playHigh ? ranked[0] : ranked.at(-1) });
         acted = true;
         continue;
@@ -172,9 +182,12 @@ describe('four browsers playing a hand', () => {
     const { clients } = await startedMatch(server.baseUrl);
     const [host] = clients as [TestClient];
 
+    // Team B takes every contract and deliberately throws it, so the match
+    // reaches the -6 boundary in exactly six hands rather than wandering there.
     await driveUntil(clients, () => host.snapshot?.match?.phase === 'MATCH_RESULT', {
       revealEveryHand: true,
-      teamAAlwaysBids: true,
+      teamBAlwaysBids: true,
+      forceContractFailure: true,
     });
     const winner = host.snapshot.match.matchResult.winner as number;
     const scores = host.snapshot.match.scores as [number, number];
@@ -183,9 +196,10 @@ describe('four browsers playing a hand', () => {
     assert.ok(winnerScore >= 6 || loserScore <= -6, `match ended on a boundary: ${scores.join(', ')}`);
     assert.ok(host.snapshot.match.history.length >= 6, 'every hand is summarised');
     assert.ok(
-      host.snapshot.match.history.every((entry: any) => entry.bidderTeam === 0),
-      'the contract stayed with team A',
+      host.snapshot.match.history.every((entry: any) => entry.bidderTeam === 1),
+      'the contract stayed with team B',
     );
+    assert.equal(winner, 0, 'the defending team wins when every contract fails');
 
     for (const client of clients) {
       await client.waitUntil(() => client.snapshot.match.phase === 'MATCH_RESULT', 'match result');
