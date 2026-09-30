@@ -25,33 +25,66 @@ jobs:
       - run: npm run build
       - run: npm test
 
-  image:
-    name: Publish container image
+  deploy:
+    name: Ship to the droplet
     needs: test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      packages: write
+    timeout-minutes: 10
+    # Skips cleanly until the secrets exist, so CI stays green either way.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: docker/setup-buildx-action@v3
+      - name: Check deploy secrets are configured
+        id: guard
+        run: |
+          if [ -n "${{ secrets.DEPLOY_HOST }}" ] && [ -n "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::DEPLOY_HOST / DEPLOY_SSH_KEY not set; skipping deploy."
+          fi
 
-      - name: Sign in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.ready == 'true'
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          node-version: 22
+          cache: npm
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Build the artefacts to ship
+        if: steps.guard.outputs.ready == 'true'
+        run: |
+          npm ci
+          npm run build
+
+      - name: Load the deploy key
+        if: steps.guard.outputs.ready == 'true'
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Ship and restart
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER || 'deploy' }}
+        run: |
+          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key -o BatchMode=yes" \
+            dist public package.json package-lock.json "$USER@$HOST:/srv/twentynine/"
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$USER@$HOST" \
+            'cd /srv/twentynine && npm ci --omit=dev --silent && sudo systemctl restart twentynine'
+
+      - name: Verify it came back
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          URL: ${{ secrets.DEPLOY_URL || 'https://134-209-100-100.sslip.io' }}
+        run: |
+          for attempt in $(seq 1 20); do
+            code=$(curl -fsS -o /dev/null -w '%{http_code}' "$URL/healthz" || echo 000)
+            [ "$code" = "200" ] && { echo "live at $URL"; exit 0; }
+            sleep 2
+          done
+          echo "deployment did not come back healthy" >&2
+          exit 1

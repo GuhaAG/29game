@@ -57,39 +57,50 @@ key generated at boot — since no room outlives the process, there is no key to
 
 ### Deployment
 
-Any single Node process: `npm ci && npm run build && npm start`. A `Dockerfile` is included and needs
-no arguments:
+**Live instance:** https://134-209-100-100.sslip.io — a $4/month DigitalOcean droplet
+(`twentynine`, 512 MB, Singapore). Deploy a change with:
 
 ```bash
-docker build -t twentynine .
-docker run -p 3000:3000 twentynine          # behind your own TLS proxy
+./scripts/deploy.sh          # build, ship, restart, verify health
 ```
 
-The image sets `NODE_ENV=production`, which **requires HTTPS and marks cookies Secure**, and
-`TRUST_PROXY=1`, so the platform's `X-Forwarded-Proto` is honoured. Deployed behind a proxy that
-terminates TLS (Fly, Render, Railway, a reverse proxy of your own) it works as-is; a request that
-arrives over plain HTTP is refused with *"A secure connection is required."* Expose the container
-directly only with `TRUST_PROXY=0` and `REQUIRE_HTTPS=0`, and only on a private network.
+How that box is put together, should it ever need rebuilding:
+
+- **Caddy** terminates TLS on ports 80/443 and reverse-proxies to the app. It obtains and renews a
+  real Let's Encrypt certificate automatically. The hostname is an `sslip.io` name that resolves to
+  the droplet's own IP, so no domain purchase is needed; point a real domain at the IP and change the
+  first line of `/etc/caddy/Caddyfile` to use it instead.
+- **The app** runs under systemd as the unprivileged `twentynine` user, bound to `127.0.0.1:3000`
+  only, with `NODE_ENV=production` (so HTTPS is required and cookies are Secure) and `TRUST_PROXY=1`
+  so Caddy's `X-Forwarded-Proto` is honoured. `ufw` allows only SSH, 80 and 443.
+- **Deploys** go over SSH as a separate `deploy` account whose sudo rights are exactly
+  `systemctl restart twentynine` — it cannot touch anything else on the machine. Its key is its own,
+  so it can be revoked without affecting your personal access.
+- Only the built artefacts ship (`dist`, `public`, the two manifests); `npm ci --omit=dev` on the
+  droplet installs the single runtime dependency. The whole install is under 1.3 MB and the running
+  process uses ~17 MB, which is why the smallest droplet is enough.
+
+**Deploying on push** is wired up in `.github/workflows/deploy.yml`: it runs the full test suite,
+then ships and restarts exactly as the script does, then checks `/healthz` came back. It skips
+cleanly until two repository secrets exist, so CI stays green in the meantime:
+
+| Secret | Value |
+| --- | --- |
+| `DEPLOY_HOST` | `134.209.100.100` |
+| `DEPLOY_SSH_KEY` | contents of `~/.ssh/twentynine_deploy` (the CI-only private key) |
+
+Set them without the key ever passing through a terminal:
+`gh secret set DEPLOY_SSH_KEY < ~/.ssh/twentynine_deploy`
+
+A `Dockerfile` is also included if you would rather run it as a container anywhere else. It sets
+`NODE_ENV=production` and `TRUST_PROXY=1`, so it expects to sit behind a TLS-terminating proxy; a
+request arriving over plain HTTP is refused with *"A secure connection is required."*
 
 Also worth knowing:
 
-- Run **one** instance. Rooms are held in that process, so a second instance would not see them, and
-  there is no shared store to coordinate through.
-- Pick hosting that does not sleep or recycle the instance while people are playing — an idle-sleep
-  free tier will drop games mid-hand.
-- `SIGTERM` closes sockets and exits; games in progress end. Deploy between games.
+- Run **one** instance. Rooms are held in that process, so a second instance would not see them.
+- Restarting ends games in progress — deploy between games.
 - Health: `GET /healthz`, `GET /readyz`, `GET /metrics` (counters only, no room data).
-
-For a quick public test without any hosting account, a tunnel is enough — the game is ephemeral
-anyway:
-
-```bash
-npm start &
-cloudflared tunnel --url http://localhost:3000     # prints a https://*.trycloudflare.com URL
-```
-
-Restart the server with `ALLOWED_ORIGINS=https://<that-host>`, `TRUST_PROXY=1`, `SECURE_COOKIES=1`
-and `REQUIRE_HTTPS=1` once you know the URL.
 
 ## What is implemented
 
