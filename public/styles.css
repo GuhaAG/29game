@@ -224,6 +224,13 @@ button[disabled] {
   color: var(--muted);
 }
 
+.tag-ready {
+  background: #2e7d32;
+  border-color: #2e7d32;
+  color: #fff;
+  font-weight: 700;
+}
+
 .status-line {
   display: flex;
   flex-wrap: wrap;

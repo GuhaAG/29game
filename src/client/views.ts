@@ -447,7 +447,7 @@ function lobbyPanel(state: UiState, actions: Actions): HTMLElement {
             ' ',
             seat.name ? h('span', { class: 'tag' }, seat.connected ? t('lobby.connected') : t('lobby.away')) : null,
             ' ',
-            seat.name ? h('span', { class: 'tag' }, seat.ready ? t('lobby.ready') : t('lobby.notReady')) : null,
+            seat.name ? h('span', { class: seat.ready ? 'tag tag-ready' : 'tag' }, seat.ready ? t('lobby.ready') : t('lobby.notReady')) : null,
           ),
         ),
       ),
@@ -501,7 +501,7 @@ function lobbyPanel(state: UiState, actions: Actions): HTMLElement {
       ),
       h(
         'div',
-        { class: 'button-row', style: 'margin-top:.75rem' },
+        { class: 'button-row', style: 'margin-top:1.5rem' },
         h(
           'button',
           {
