@@ -16,9 +16,9 @@ echo "==> building"
 npm run build >/dev/null
 
 echo "==> shipping to $USER@$HOST"
-# Only the runtime artefacts: compiled server, client bundle, manifests.
+# Only the runtime artefacts: compiled server, client bundle, text, manifests.
 rsync -az --delete -e "ssh $SSH_OPTS" \
-  dist public package.json package-lock.json \
+  dist public locales package.json package-lock.json \
   "$USER@$HOST:/srv/twentynine/"
 
 echo "==> installing runtime dependencies and restarting"

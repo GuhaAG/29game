@@ -1,14 +1,7 @@
-import {
-  RULES_TEXT,
-  SUIT_NAMES,
-  SUIT_SYMBOLS,
-  SUITS,
-  cardAccessibleLabel,
-  type CardId,
-  type Suit,
-} from '../engine';
+import { SUITS, rankOf, suitOf, type CardId, type Suit } from '../engine';
 import type { Snapshot } from '../shared/wire';
 import { h, fragment } from './dom';
+import { rulesSections, t } from './text';
 
 export interface Actions {
   navigate(path: string): void;
@@ -39,10 +32,40 @@ export interface UiState {
   log: string[];
 }
 
-const TEAM_NAMES = ['Team A', 'Team B'];
+function clubHeader(): HTMLElement {
+  return h('header', { class: 'club-header' },
+    h('a', { class: 'club-brand', href: '/', 'aria-label': t('header.homeLabel') }, t('app.brand'),
+      h('span', {}, t('header.tagline'))),
+    h('span', { class: 'club-private' }, t('header.private')),
+  );
+}
+
+function teamName(team: number): string {
+  return t(`teams.${team}`);
+}
 
 function seatLabel(seat: number): string {
-  return `Seat ${seat + 1}`;
+  return t('seat.label', { n: seat + 1 });
+}
+
+function suitName(suit: string): string {
+  return t(`suits.${suit}.name`);
+}
+
+function suitSymbol(suit: string): string {
+  return t(`suits.${suit}.symbol`);
+}
+
+function cardAccessibleLabel(cardId: CardId): string {
+  return t('card.label', { rank: t(`ranks.${rankOf(cardId)}`), suit: suitName(suitOf(cardId)) });
+}
+
+function cardsCount(count: number): string {
+  return t('card.count', { count });
+}
+
+function seatWithTeam(seat: number, team: number): string {
+  return t('seat.withTeam', { seat: seatLabel(seat), team: teamName(team) });
 }
 
 function notice(state: UiState, actions: Actions): HTMLElement | null {
@@ -51,7 +74,7 @@ function notice(state: UiState, actions: Actions): HTMLElement | null {
     'div',
     { class: `notice ${state.notice.level}`, role: state.notice.level === 'error' ? 'alert' : 'status' },
     h('p', {}, state.notice.message),
-    h('button', { onClick: () => actions.dismissNotice(), 'data-focus': 'dismiss-notice' }, 'Dismiss'),
+    h('button', { onClick: () => actions.dismissNotice(), 'data-focus': 'dismiss-notice' }, t('common.dismiss')),
   );
 }
 
@@ -59,8 +82,8 @@ function rulesDrawer(): HTMLElement {
   return h(
     'details',
     { class: 'rules' },
-    h('summary', {}, 'Rules of this table'),
-    ...RULES_TEXT.map((section) =>
+    h('summary', {}, t('rules.summary')),
+    ...rulesSections().map((section) =>
       fragment(
         h('h3', {}, section.heading),
         h('ul', {}, ...section.points.map((point) => h('li', {}, point))),
@@ -70,17 +93,17 @@ function rulesDrawer(): HTMLElement {
 }
 
 function card(cardId: CardId, options: { played?: boolean; reserved?: boolean } = {}): HTMLElement {
-  const rank = cardId.slice(1) === 'T' ? '10' : cardId.slice(1);
+  const rank = t(`rankFaces.${rankOf(cardId)}`);
   const suit = cardId[0] as Suit;
   return h(
     'span',
     {
-      class: `card${options.played ? ' played' : ''}${options.reserved ? ' reserved' : ''}`,
+      class: `card suit-${suit}${options.played ? ' played' : ''}${options.reserved ? ' reserved' : ''}`,
       role: 'img',
       'aria-label': cardAccessibleLabel(cardId),
     },
     h('span', { class: 'rank', 'aria-hidden': 'true' }, rank),
-    h('span', { class: 'suit', 'aria-hidden': 'true' }, SUIT_SYMBOLS[suit]),
+    h('span', { class: 'suit', 'aria-hidden': 'true' }, suitSymbol(suit)),
   );
 }
 
@@ -88,67 +111,61 @@ function cardButton(
   cardId: CardId,
   options: { selected: boolean; disabled: boolean; onSelect: () => void },
 ): HTMLElement {
-  const rank = cardId.slice(1) === 'T' ? '10' : cardId.slice(1);
+  const rank = t(`rankFaces.${rankOf(cardId)}`);
   const suit = cardId[0] as Suit;
   return h(
     'button',
     {
-      class: 'card',
+      class: `card suit-${suit}`,
       type: 'button',
       'aria-pressed': options.selected ? 'true' : 'false',
-      'aria-label': `${cardAccessibleLabel(cardId)}${options.disabled ? ', not playable now' : ''}`,
+      'aria-label': `${cardAccessibleLabel(cardId)}${options.disabled ? t('card.notPlayableSuffix') : ''}`,
       'data-focus': `card-${cardId}`,
       disabled: options.disabled,
       onClick: options.onSelect,
     },
     h('span', { class: 'rank', 'aria-hidden': 'true' }, rank),
-    h('span', { class: 'suit', 'aria-hidden': 'true' }, SUIT_SYMBOLS[suit]),
+    h('span', { class: 'suit', 'aria-hidden': 'true' }, suitSymbol(suit)),
   );
 }
 
 export function homeView(state: UiState, actions: Actions): HTMLElement {
-  return h(
-    'main',
-    { id: 'main', class: 'screen' },
-    h('h1', {}, '29'),
-    h('p', { class: 'lede' }, 'A private table for exactly four people. No accounts, no downloads.'),
+  return h('main', { id: 'main', class: 'screen home-screen' },
+    clubHeader(),
     notice(state, actions),
-    h(
-      'div',
-      { class: 'card-panel' },
-      h('h2', {}, 'Start a game'),
-      h('p', {}, 'Create a table, then share the link and password with three other people.'),
-      h(
-        'button',
-        { class: 'primary', 'data-focus': 'create', onClick: () => actions.navigate('/create') },
-        'Create game',
-      ),
-    ),
-    h(
-      'div',
-      { class: 'card-panel' },
-      h('h2', {}, 'Join a game'),
-      h('p', {}, 'Open the room link you were sent, then enter the room password.'),
-      h(
-        'form',
-        {
-          onSubmit: (event: SubmitEvent) => {
-            event.preventDefault();
-            const input = (event.target as HTMLFormElement).elements.namedItem('room') as HTMLInputElement;
-            const value = input.value.trim().replace(/^.*\/room\//, '');
-            if (value) actions.navigate(`/room/${value}`);
+    h('div', { class: 'home-layout' },
+      h('section', { class: 'home-copy' },
+        h('p', { class: 'eyebrow' }, t('home.eyebrow')),
+        h('h1', {}, t('home.headlineLine1'), h('br', {}), t('home.headlineLine2')),
+        h('p', { class: 'lede' }, t('home.lede')),
+        h('p', { class: 'hint' }, t('home.hint')),
+        h('button', { class: 'primary home-create', 'data-focus': 'create', onClick: () => actions.navigate('/create') }, t('home.createButton'), h('span', { 'aria-hidden': 'true' }, t('home.createArrow'))),
+        h('section', { class: 'home-join' },
+          h('h2', {}, t('home.joinHeading')),
+          h('p', { class: 'hint' }, t('home.joinHint')),
+          h('form', {
+            onSubmit: (event: SubmitEvent) => {
+              event.preventDefault();
+              const input = (event.target as HTMLFormElement).elements.namedItem('room') as HTMLInputElement;
+              const value = input.value.trim().replace(/^.*\/room\//, '');
+              if (value) actions.navigate(`/room/${value}`);
+            },
           },
-        },
-        h(
-          'p',
-          { class: 'field' },
-          h('label', { for: 'room' }, 'Room link or room code'),
-          h('input', { id: 'room', name: 'room', type: 'text', 'data-focus': 'room', autocomplete: 'off' }),
+            h('label', { for: 'room' }, t('home.joinLabel')),
+            h('div', { class: 'join-row' },
+              h('input', { id: 'room', name: 'room', type: 'text', placeholder: t('home.joinPlaceholder'), 'data-focus': 'room', autocomplete: 'off' }),
+              h('button', { type: 'submit' }, t('home.joinButton')),
+            ),
+          ),
         ),
-        h('button', { class: 'primary', type: 'submit' }, 'Continue'),
+      ),
+      h('div', { class: 'home-art', 'aria-hidden': 'true' },
+        h('div', { class: 'art-cards' }, card('SJ'), card('H9'), card('CA')),
+        h('span', { class: 'art-caption' }, t('home.artCaption')),
       ),
     ),
     rulesDrawer(),
+    h('footer', { class: 'club-footer' }, t('footer.left'), h('span', {}, t('footer.right'))),
   );
 }
 
@@ -156,7 +173,8 @@ export function createView(state: UiState, actions: Actions): HTMLElement {
   return h(
     'main',
     { id: 'main', class: 'screen' },
-    h('h1', {}, 'Create a game'),
+    clubHeader(),
+    h('h1', {}, t('create.heading')),
     notice(state, actions),
     h(
       'form',
@@ -173,7 +191,7 @@ export function createView(state: UiState, actions: Actions): HTMLElement {
       h(
         'p',
         { class: 'field' },
-        h('label', { for: 'name' }, 'Your screen name'),
+        h('label', { for: 'name' }, t('common.screenName')),
         h('input', {
           id: 'name',
           name: 'name',
@@ -183,12 +201,12 @@ export function createView(state: UiState, actions: Actions): HTMLElement {
           autocomplete: 'nickname',
           'data-focus': 'name',
         }),
-        h('span', { class: 'hint' }, 'Up to 24 characters. Everyone picks their own name.'),
+        h('span', { class: 'hint' }, t('create.nameHint')),
       ),
       h(
         'fieldset',
         { class: 'field' },
-        h('legend', {}, 'Your seat'),
+        h('legend', {}, t('create.seatLegend')),
         ...[0, 1, 2, 3].map((seat) =>
           h(
             'label',
@@ -200,14 +218,14 @@ export function createView(state: UiState, actions: Actions): HTMLElement {
               checked: seat === 0,
               'data-focus': `seat-${seat}`,
             }),
-            `${seatLabel(seat)} — ${TEAM_NAMES[seat % 2]}`,
+            seatWithTeam(seat, seat % 2),
           ),
         ),
-        h('span', { class: 'hint' }, 'Seats 1 and 3 are partners; seats 2 and 4 are partners.'),
+        h('span', { class: 'hint' }, t('create.seatHint')),
       ),
-      h('button', { class: 'primary', type: 'submit', disabled: state.busy }, 'Create game'),
+      h('button', { class: 'primary', type: 'submit', disabled: state.busy }, t('create.submit')),
     ),
-    h('button', { onClick: () => actions.navigate('/') }, 'Back'),
+    h('button', { onClick: () => actions.navigate('/') }, t('common.back')),
   );
 }
 
@@ -215,8 +233,9 @@ export function gateView(state: UiState, actions: Actions): HTMLElement {
   return h(
     'main',
     { id: 'main', class: 'screen' },
-    h('h1', {}, 'Enter the room password'),
-    h('p', { class: 'lede' }, 'The host shares this privately. It is not part of the room link.'),
+    clubHeader(),
+    h('h1', {}, t('gate.heading')),
+    h('p', { class: 'lede' }, t('gate.lede')),
     notice(state, actions),
     h(
       'form',
@@ -231,7 +250,7 @@ export function gateView(state: UiState, actions: Actions): HTMLElement {
       h(
         'p',
         { class: 'field' },
-        h('label', { for: 'password' }, 'Room password'),
+        h('label', { for: 'password' }, t('gate.passwordLabel')),
         h('input', {
           id: 'password',
           name: 'password',
@@ -241,15 +260,15 @@ export function gateView(state: UiState, actions: Actions): HTMLElement {
           spellcheck: 'false',
           'data-focus': 'password',
         }),
-        h('span', { class: 'hint' }, 'Upper or lower case, with or without the hyphens.'),
+        h('span', { class: 'hint' }, t('gate.passwordHint')),
       ),
-      h('button', { class: 'primary', type: 'submit', disabled: state.busy }, 'Continue'),
+      h('button', { class: 'primary', type: 'submit', disabled: state.busy }, t('gate.submit')),
     ),
     h(
       'details',
       { class: 'rules' },
-      h('summary', {}, 'Lost your seat after closing the browser?'),
-      h('p', {}, 'Ask the host for a recovery code for your seat, then enter it here.'),
+      h('summary', {}, t('gate.lostSeatSummary')),
+      h('p', {}, t('gate.lostSeatBody')),
       h(
         'form',
         {
@@ -262,10 +281,10 @@ export function gateView(state: UiState, actions: Actions): HTMLElement {
         h(
           'p',
           { class: 'field' },
-          h('label', { for: 'code' }, 'Recovery code'),
+          h('label', { for: 'code' }, t('gate.recoveryLabel')),
           h('input', { id: 'code', name: 'code', type: 'text', autocomplete: 'off', 'data-focus': 'code' }),
         ),
-        h('button', { type: 'submit' }, 'Recover my seat'),
+        h('button', { type: 'submit' }, t('gate.recoverButton')),
       ),
     ),
   );
@@ -277,7 +296,8 @@ export function joinView(state: UiState, actions: Actions): HTMLElement {
   return h(
     'main',
     { id: 'main', class: 'screen' },
-    h('h1', {}, 'Choose your name and seat'),
+    clubHeader(),
+    h('h1', {}, t('join.heading')),
     notice(state, actions),
     h(
       'form',
@@ -295,7 +315,7 @@ export function joinView(state: UiState, actions: Actions): HTMLElement {
       h(
         'p',
         { class: 'field' },
-        h('label', { for: 'name' }, 'Your screen name'),
+        h('label', { for: 'name' }, t('common.screenName')),
         h('input', {
           id: 'name',
           name: 'name',
@@ -309,7 +329,7 @@ export function joinView(state: UiState, actions: Actions): HTMLElement {
       h(
         'fieldset',
         { class: 'field' },
-        h('legend', {}, 'Free seats'),
+        h('legend', {}, t('join.freeSeats')),
         ...seats.map((seat) =>
           seat.name === null
             ? h(
@@ -322,18 +342,18 @@ export function joinView(state: UiState, actions: Actions): HTMLElement {
                   checked: free[0]?.seat === seat.seat,
                   'data-focus': `seat-${seat.seat}`,
                 }),
-                `${seatLabel(seat.seat)} — ${TEAM_NAMES[seat.team]}`,
+                seatWithTeam(seat.seat, seat.team),
               )
             : h(
                 'p',
                 { class: 'hint' },
-                `${seatLabel(seat.seat)} — ${TEAM_NAMES[seat.team]}: ${seat.name} (taken)`,
+                t('seat.takenBy', { seat: seatLabel(seat.seat), team: teamName(seat.team), name: seat.name }),
               ),
         ),
       ),
       free.length === 0
-        ? h('p', { class: 'notice error' }, 'Every seat is taken in this room.')
-        : h('button', { class: 'primary', type: 'submit', disabled: state.busy }, 'Join this table'),
+        ? h('p', { class: 'notice error' }, t('join.full'))
+        : h('button', { class: 'primary', type: 'submit', disabled: state.busy }, t('join.submit')),
     ),
     rulesDrawer(),
   );
@@ -343,7 +363,8 @@ export function recoverView(state: UiState, actions: Actions): HTMLElement {
   return h(
     'main',
     { id: 'main', class: 'screen' },
-    h('h1', {}, 'Recover your seat'),
+    clubHeader(),
+    h('h1', {}, t('recover.heading')),
     notice(state, actions),
     h(
       'form',
@@ -358,11 +379,11 @@ export function recoverView(state: UiState, actions: Actions): HTMLElement {
       h(
         'p',
         { class: 'field' },
-        h('label', { for: 'code' }, 'One-time recovery code'),
+        h('label', { for: 'code' }, t('recover.codeLabel')),
         h('input', { id: 'code', name: 'code', type: 'text', required: true, 'data-focus': 'code' }),
-        h('span', { class: 'hint' }, 'The host can issue one after checking who you are.'),
+        h('span', { class: 'hint' }, t('recover.codeHint')),
       ),
-      h('button', { class: 'primary', type: 'submit', disabled: state.busy }, 'Recover my seat'),
+      h('button', { class: 'primary', type: 'submit', disabled: state.busy }, t('recover.submit')),
     ),
   );
 }
@@ -371,15 +392,16 @@ export function closedView(state: UiState, actions: Actions): HTMLElement {
   return h(
     'main',
     { id: 'main', class: 'screen' },
-    h('h1', {}, 'This room is closed'),
+    clubHeader(),
+    h('h1', {}, t('closed.heading')),
     h(
       'p',
       {},
       state.statusDetail === 'expired'
-        ? 'The room expired. Rooms close after a period without activity, and after 24 hours at the latest.'
-        : 'The host closed this room, or it is no longer available.',
+        ? t('closed.expired')
+        : t('closed.closed'),
     ),
-    h('button', { class: 'primary', 'data-focus': 'home', onClick: () => actions.navigate('/') }, 'Back to the start'),
+    h('button', { class: 'primary', 'data-focus': 'home', onClick: () => actions.navigate('/') }, t('closed.home')),
   );
 }
 
@@ -387,12 +409,12 @@ function connectionBanner(state: UiState): HTMLElement | null {
   if (state.status === 'open') return null;
   const message =
     state.status === 'reconnecting'
-      ? 'Reconnecting—actions paused'
+      ? t('connection.reconnecting')
       : state.status === 'connecting'
-        ? 'Connecting…'
+        ? t('connection.connecting')
         : state.statusDetail === 'replaced'
-          ? 'This seat is open in another tab. This view is no longer active.'
-          : 'Disconnected.';
+          ? t('connection.replaced')
+          : t('connection.disconnected');
   return h('div', { class: 'banner', role: 'status' }, message);
 }
 
@@ -403,7 +425,7 @@ function lobbyPanel(state: UiState, actions: Actions): HTMLElement {
   return h(
     'div',
     {},
-    h('h2', {}, 'Lobby'),
+    h('h2', {}, t('lobby.heading')),
     h(
       'ul',
       { class: 'seat-list' },
@@ -414,18 +436,18 @@ function lobbyPanel(state: UiState, actions: Actions): HTMLElement {
           h(
             'span',
             {},
-            h('strong', {}, seat.name ?? 'Empty'),
+            h('strong', {}, seat.name ?? t('common.empty')),
             ' ',
-            h('span', { class: 'tag' }, `${seatLabel(seat.seat)} · ${TEAM_NAMES[seat.team]}`),
+            h('span', { class: 'tag' }, t('seat.short', { seat: seatLabel(seat.seat), team: teamName(seat.team) })),
           ),
           h(
             'span',
             {},
-            seat.isHost ? h('span', { class: 'tag' }, 'Host') : null,
+            seat.isHost ? h('span', { class: 'tag' }, t('lobby.host')) : null,
             ' ',
-            seat.name ? h('span', { class: 'tag' }, seat.connected ? 'Connected' : 'Away') : null,
+            seat.name ? h('span', { class: 'tag' }, seat.connected ? t('lobby.connected') : t('lobby.away')) : null,
             ' ',
-            seat.name ? h('span', { class: 'tag' }, seat.ready ? 'Ready' : 'Not ready') : null,
+            seat.name ? h('span', { class: 'tag' }, seat.ready ? t('lobby.ready') : t('lobby.notReady')) : null,
           ),
         ),
       ),
@@ -433,7 +455,7 @@ function lobbyPanel(state: UiState, actions: Actions): HTMLElement {
     h(
       'div',
       { class: 'card-panel' },
-      h('h3', {}, 'Your details'),
+      h('h3', {}, t('lobby.detailsHeading')),
       h(
         'form',
         {
@@ -448,7 +470,7 @@ function lobbyPanel(state: UiState, actions: Actions): HTMLElement {
         h(
           'p',
           { class: 'field' },
-          h('label', { for: 'newname' }, 'Your screen name'),
+          h('label', { for: 'newname' }, t('common.screenName')),
           h('input', {
             id: 'newname',
             name: 'newname',
@@ -458,9 +480,9 @@ function lobbyPanel(state: UiState, actions: Actions): HTMLElement {
             'data-focus': 'newname',
           }),
         ),
-        h('button', { type: 'submit' }, 'Change my name'),
+        h('button', { type: 'submit' }, t('lobby.changeName')),
       ),
-      h('p', { class: 'hint' }, 'Changing your name or seat clears everyone’s ready mark.'),
+      h('p', { class: 'hint' }, t('lobby.clearsReady')),
       h(
         'div',
         { class: 'button-row' },
@@ -473,7 +495,7 @@ function lobbyPanel(state: UiState, actions: Actions): HTMLElement {
                 'data-focus': `move-${seat.seat}`,
                 onClick: () => actions.send('moveOwnSeat', { seat: seat.seat }),
               },
-              `Move to ${seatLabel(seat.seat)} (${TEAM_NAMES[seat.team]})`,
+              t('lobby.moveTo', { seat: seatLabel(seat.seat), team: teamName(seat.team) }),
             ),
           ),
       ),
@@ -487,7 +509,7 @@ function lobbyPanel(state: UiState, actions: Actions): HTMLElement {
             'data-focus': 'ready',
             onClick: () => actions.send('ready', { ready: !you.ready }),
           },
-          you.ready ? 'Not ready yet' : 'I am ready',
+          you.ready ? t('lobby.unreadyButton') : t('lobby.readyButton'),
         ),
       ),
     ),
@@ -502,18 +524,18 @@ function hostPanel(state: UiState, actions: Actions): HTMLElement {
   return h(
     'div',
     { class: 'card-panel' },
-    h('h3', {}, 'Host controls'),
-    h('p', {}, 'Share the link and the password separately, and only with your three players.'),
+    h('h3', {}, t('host.heading')),
+    h('p', {}, t('host.shareHint')),
     h('p', {}, h('code', { class: 'secret' }, link)),
     h(
       'div',
       { class: 'button-row' },
-      h('button', { 'data-focus': 'copy-link', onClick: () => actions.copy('Room link', link) }, 'Copy room link'),
+      h('button', { 'data-focus': 'copy-link', onClick: () => actions.copy(t('host.roomLinkLabel'), link) }, t('host.copyLink')),
       password
         ? h(
             'button',
-            { 'data-focus': 'copy-pass', onClick: () => actions.copy('Room password', password) },
-            'Copy password',
+            { 'data-focus': 'copy-pass', onClick: () => actions.copy(t('host.roomPasswordLabel'), password) },
+            t('host.copyPassword'),
           )
         : null,
     ),
@@ -521,7 +543,7 @@ function hostPanel(state: UiState, actions: Actions): HTMLElement {
       ? h(
           'details',
           { class: 'rules' },
-          h('summary', {}, 'Show room password'),
+          h('summary', {}, t('host.showPassword')),
           h('p', {}, h('code', { class: 'secret' }, password)),
         )
       : null,
@@ -536,13 +558,13 @@ function hostPanel(state: UiState, actions: Actions): HTMLElement {
           'data-focus': 'start',
           onClick: () => actions.send('start'),
         },
-        'Start match',
+        t('host.start'),
       ),
-      h('button', { onClick: () => actions.send('rotatePassword') }, 'New password'),
-      h('button', { class: 'danger', onClick: () => actions.send('closeRoom') }, 'Close room'),
+      h('button', { onClick: () => actions.send('rotatePassword') }, t('host.newPassword')),
+      h('button', { class: 'danger', onClick: () => actions.send('closeRoom') }, t('host.closeRoom')),
     ),
     !snapshot.canStart
-      ? h('p', { class: 'hint' }, 'Start becomes available when all four seats are filled, connected and ready.')
+      ? h('p', { class: 'hint' }, t('host.startHint'))
       : null,
     h(
       'div',
@@ -553,7 +575,7 @@ function hostPanel(state: UiState, actions: Actions): HTMLElement {
           h(
             'button',
             { class: 'danger', onClick: () => actions.send('removeMember', { seat: seat.seat }) },
-            `Remove ${seat.name}`,
+            t('host.remove', { name: seat.name ?? '' }),
           ),
         ),
     ),
@@ -561,9 +583,9 @@ function hostPanel(state: UiState, actions: Actions): HTMLElement {
       ? h(
           'div',
           { class: 'notice' },
-          h('p', {}, `One-time recovery code for ${seatLabel(state.recovery.seat)} (valid five minutes):`),
+          h('p', {}, t('host.recoveryFor', { seat: seatLabel(state.recovery.seat) })),
           h('p', {}, h('code', { class: 'secret' }, state.recovery.code)),
-          h('p', { class: 'hint' }, 'Give it to that person directly. It works once.'),
+          h('p', { class: 'hint' }, t('host.recoveryGive')),
         )
       : null,
   );
@@ -574,30 +596,30 @@ function statusLine(snapshot: Snapshot): HTMLElement {
   const hand = match?.hand ?? null;
   const trumpText =
     hand === null
-      ? '—'
+      ? t('status.trumpNone')
       : hand.trumpStatus === 'revealed'
-        ? `${SUIT_NAMES[hand.trump as Suit]} ${SUIT_SYMBOLS[hand.trump as Suit]}`
+        ? t('status.trumpRevealed', { suit: suitName(hand.trump as Suit), symbol: suitSymbol(hand.trump as Suit) })
         : hand.trumpStatus === 'hidden'
           ? hand.trump
-            ? `Hidden (yours: ${SUIT_NAMES[hand.trump]})`
-            : 'Hidden'
-          : 'Not chosen';
+            ? t('status.trumpHiddenYours', { suit: suitName(hand.trump) })
+            : t('status.trumpHidden')
+          : t('status.trumpNotChosen');
   return h(
     'ul',
     { class: 'status-line' },
-    h('li', {}, 'Hand ', h('strong', {}, String(match?.handNumber ?? 1))),
-    h('li', {}, 'Dealer ', h('strong', {}, seatLabel(match?.dealer ?? 0))),
+    h('li', {}, `${t('status.hand')} `, h('strong', {}, String(match?.handNumber ?? 1))),
+    h('li', {}, `${t('status.dealer')} `, h('strong', {}, seatLabel(match?.dealer ?? 0))),
     h(
       'li',
       {},
-      'Contract ',
-      h('strong', {}, hand?.bid ? `${hand.bid} by ${seatLabel(hand.bidder as number)}` : 'in the auction'),
+      `${t('status.contract')} `,
+      h('strong', {}, hand?.bid ? t('status.contractValue', { bid: hand.bid, seat: seatLabel(hand.bidder as number) }) : t('status.contractAuction')),
     ),
-    h('li', {}, 'Stake ', h('strong', {}, `×${hand?.stake ?? 1}`)),
-    h('li', {}, 'Trump ', h('strong', {}, trumpText)),
-    h('li', {}, 'Trick ', h('strong', {}, `${hand?.trickNumber ?? 1} of 8`)),
-    h('li', {}, 'Team A ', h('strong', {}, String(match?.scores[0] ?? 0))),
-    h('li', {}, 'Team B ', h('strong', {}, String(match?.scores[1] ?? 0))),
+    h('li', {}, `${t('status.stake')} `, h('strong', {}, t('status.stakeValue', { stake: hand?.stake ?? 1 }))),
+    h('li', {}, `${t('status.trump')} `, h('strong', {}, trumpText)),
+    h('li', {}, `${t('status.trick')} `, h('strong', {}, t('status.trickValue', { n: hand?.trickNumber ?? 1 }))),
+    h('li', {}, `${teamName(0)} `, h('strong', {}, String(match?.scores[0] ?? 0))),
+    h('li', {}, `${teamName(1)} `, h('strong', {}, String(match?.scores[1] ?? 0))),
   );
 }
 
@@ -607,22 +629,23 @@ function seatBox(snapshot: Snapshot, seat: number, position: string): HTMLElemen
   const hand = match?.hand ?? null;
   const isTurn = hand?.turn === seat && match?.phase === 'PLAYING';
   const flags: string[] = [];
-  if (match && match.dealer === seat) flags.push('dealer');
-  if (hand?.bidder === seat) flags.push('contract');
-  if (info && !info.connected) flags.push('away');
+  if (match && match.dealer === seat) flags.push(t('table.dealer'));
+  if (hand?.bidder === seat) flags.push(t('table.contract'));
+  if (info && !info.connected) flags.push(t('table.away'));
   const acknowledged = hand?.ack?.acknowledged.includes(seat as 0 | 1 | 2 | 3);
-  if (hand?.ack) flags.push(acknowledged ? 'ready for next trick' : 'confirming');
+  if (hand?.ack) flags.push(acknowledged ? t('table.readyNext') : t('table.confirming'));
   return h(
     'div',
     {
       class: `seat-box ${position}${isTurn ? ' turn' : ''}`,
       'aria-current': isTurn ? 'true' : null,
     },
-    h('span', { class: 'seat-name' }, info?.name ?? 'Empty'),
-    h('span', { class: 'flags' }, `${seatLabel(seat)} · ${TEAM_NAMES[seat % 2]}`),
-    hand ? h('span', { class: 'flags' }, `${hand.cardCounts[seat as 0 | 1 | 2 | 3] ?? 0} cards`) : null,
+    h('span', { class: 'seat-avatar', 'aria-hidden': 'true' }, info?.name?.trim().slice(0, 2).toUpperCase() || '·'),
+    h('span', { class: 'seat-name' }, info?.name ?? t('common.empty')),
+    h('span', { class: 'flags' }, t('seat.short', { seat: seatLabel(seat), team: teamName(seat % 2) })),
+    hand ? h('span', { class: 'flags' }, cardsCount(hand.cardCounts[seat as 0 | 1 | 2 | 3] ?? 0)) : null,
     flags.length > 0 ? h('span', { class: 'flags' }, flags.join(' · ')) : null,
-    isTurn ? h('span', { class: 'flags' }, 'to play') : null,
+    isTurn ? h('span', { class: 'flags turn-label' }, t('table.toPlay')) : null,
   );
 }
 
@@ -631,9 +654,9 @@ function trickArea(snapshot: Snapshot): HTMLElement {
   const plays = hand?.currentTrick.plays ?? [];
   return h(
     'div',
-    { class: 'trick', 'aria-label': 'Cards played to the current trick' },
+    { class: 'trick', 'aria-label': t('table.trickLabel') },
     ...(plays.length === 0
-      ? [h('span', { class: 'flags' }, 'No cards yet')]
+      ? [h('span', { class: 'flags' }, t('table.noCards'))]
       : plays.map((play) =>
           h(
             'span',
@@ -657,16 +680,16 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
     return h(
       'div',
       { class: 'card-panel', role: 'status' },
-      h('h2', {}, 'Paused'),
+      h('h2', {}, t('actions.paused.heading')),
       h(
         'p',
         {},
-        `Waiting for ${snapshot.paused?.seats.map((seat) => snapshot.seats[seat]?.name ?? seatLabel(seat)).join(', ')} to reconnect. Nothing is lost.`,
+        t('actions.paused.waiting', { names: (snapshot.paused?.seats ?? []).map((seat) => snapshot.seats[seat]?.name ?? seatLabel(seat)).join(', ') }),
       ),
       h(
         'p',
         { class: 'hint' },
-        'The host can issue a recovery code, or all remaining players can end the match with no winner.',
+        t('actions.paused.hint'),
       ),
       h(
         'div',
@@ -677,18 +700,18 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
                 h(
                   'button',
                   { onClick: () => actions.send('issueRecovery', { seat }) },
-                  `Recovery code for ${seatLabel(seat)}`,
+                  t('actions.paused.recoveryFor', { seat: seatLabel(seat) }),
                 ),
               ),
             )
           : null,
-        h('button', { class: 'danger', onClick: () => actions.send('abandonMatch') }, 'End match, no winner'),
+        h('button', { class: 'danger', onClick: () => actions.send('abandonMatch') }, t('actions.paused.endMatch')),
       ),
       state.recovery
         ? h(
             'div',
             { class: 'notice' },
-            h('p', {}, `Recovery code for ${seatLabel(state.recovery.seat)}:`),
+            h('p', {}, t('actions.paused.recoveryShown', { seat: seatLabel(state.recovery.seat) })),
             h('p', {}, h('code', { class: 'secret' }, state.recovery.code)),
           )
         : null,
@@ -701,18 +724,18 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
         return h(
           'div',
           { class: 'card-panel', role: 'status' },
-          h('h2', {}, 'Auction'),
-          h('p', {}, `Waiting for ${snapshot.seats[hand?.auction.turn ?? 0]?.name ?? 'the next player'} to bid.`),
+          h('h2', {}, t('actions.auction.heading')),
+          h('p', {}, t('actions.auction.waiting', { name: snapshot.seats[hand?.auction.turn ?? 0]?.name ?? t('actions.auction.nextPlayer') })),
           auctionHistory(snapshot),
         );
       }
       return h(
         'div',
         { class: 'card-panel' },
-        h('h2', {}, 'Your bid'),
+        h('h2', {}, t('actions.auction.yourBid')),
         h(
           'div',
-          { class: 'bid-grid', role: 'group', 'aria-label': 'Available bids' },
+          { class: 'bid-grid', role: 'group', 'aria-label': t('actions.auction.bidsLabel') },
           ...available.bids.map((value) =>
             h(
               'button',
@@ -737,9 +760,9 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
               'data-focus': 'bid-confirm',
               onClick: () => actions.send('bid', { value: state.selectedBid }),
             },
-            state.selectedBid === null ? 'Bid' : `Bid ${state.selectedBid}`,
+            state.selectedBid === null ? t('actions.auction.bid') : t('actions.auction.bidValue', { value: state.selectedBid }),
           ),
-          h('button', { 'data-focus': 'pass', onClick: () => actions.send('pass') }, 'Pass'),
+          h('button', { 'data-focus': 'pass', onClick: () => actions.send('pass') }, t('common.pass')),
         ),
         auctionHistory(snapshot),
       );
@@ -749,15 +772,15 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
         return h(
           'div',
           { class: 'card-panel', role: 'status' },
-          h('h2', {}, 'Trump'),
-          h('p', {}, `${snapshot.seats[hand?.bidder ?? 0]?.name ?? 'The contract holder'} is choosing trump.`),
+          h('h2', {}, t('actions.trump.heading')),
+          h('p', {}, t('actions.trump.waiting', { name: snapshot.seats[hand?.bidder ?? 0]?.name ?? t('actions.trump.contractHolder') })),
         );
       }
       return h(
         'div',
         { class: 'card-panel' },
-        h('h2', {}, 'Choose trump'),
-        h('p', { class: 'hint' }, 'Only you will see the suit until it is revealed in play.'),
+        h('h2', {}, t('actions.trump.choose')),
+        h('p', { class: 'hint' }, t('actions.trump.secretHint')),
         h(
           'div',
           { class: 'button-row' },
@@ -768,19 +791,19 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
                 'data-focus': `trump-${suit}`,
                 onClick: () => actions.send('chooseTrump', { mode: 'suit', suit }),
               },
-              `${SUIT_NAMES[suit]} ${SUIT_SYMBOLS[suit]}`,
+              t('status.trumpRevealed', { suit: suitName(suit), symbol: suitSymbol(suit) }),
             ),
           ),
           h(
             'button',
             { class: 'primary', 'data-focus': 'trump-seventh', onClick: () => actions.send('chooseTrump', { mode: 'seventh' }) },
-            'Seventh card',
+            t('actions.trump.seventhButton'),
           ),
         ),
         h(
           'p',
           { class: 'hint' },
-          'Seventh card: trump becomes the suit of the seventh card of your own deal, held aside until the reveal.',
+          t('actions.trump.seventhHint'),
         ),
       );
     }
@@ -793,20 +816,20 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
         return h(
           'div',
           { class: 'card-panel', role: 'status' },
-          h('h2', {}, isRedouble ? 'Redouble' : 'Double'),
-          h('p', {}, `Waiting for ${actor === null ? 'a decision' : (snapshot.seats[actor]?.name ?? seatLabel(actor))}.`),
+          h('h2', {}, isRedouble ? t('actions.redouble.headingWait') : t('actions.double.headingWait')),
+          h('p', {}, t('actions.waitingDecision', { name: actor === null ? t('actions.aDecision') : (snapshot.seats[actor]?.name ?? seatLabel(actor)) })),
         );
       }
       return h(
         'div',
         { class: 'card-panel' },
-        h('h2', {}, isRedouble ? 'Redouble?' : 'Double?'),
+        h('h2', {}, isRedouble ? t('actions.redouble.headingAsk') : t('actions.double.headingAsk')),
         h(
           'p',
           {},
           isRedouble
-            ? 'A redouble makes the hand worth four match points either way.'
-            : 'A double makes the hand worth two match points either way.',
+            ? t('actions.redouble.explain')
+            : t('actions.double.explain'),
         ),
         h(
           'div',
@@ -818,7 +841,7 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
               'data-focus': 'double',
               onClick: () => actions.send(isRedouble ? 'redouble' : 'double'),
             },
-            isRedouble ? 'Redouble' : 'Double',
+            isRedouble ? t('actions.redouble.button') : t('actions.double.button'),
           ),
           h(
             'button',
@@ -826,7 +849,7 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
               'data-focus': 'pass-double',
               onClick: () => actions.send(isRedouble ? 'passRedouble' : 'passDouble'),
             },
-            'Pass',
+            t('common.pass'),
           ),
         ),
       );
@@ -836,11 +859,11 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
         return h(
           'div',
           { class: 'card-panel' },
-          h('h2', {}, 'Between tricks'),
+          h('h2', {}, t('actions.between.heading')),
           h(
             'p',
             {},
-            `${seatLabel(hand.tricks[hand.ack.trickIndex]?.winner ?? 0)} won trick ${hand.ack.trickIndex + 1} for ${hand.tricks[hand.ack.trickIndex]?.points ?? 0} points.`,
+            t('actions.between.won', { seat: seatLabel(hand.tricks[hand.ack.trickIndex]?.winner ?? 0), n: hand.ack.trickIndex + 1, points: hand.tricks[hand.ack.trickIndex]?.points ?? 0 }),
           ),
           h(
             'div',
@@ -853,20 +876,20 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
                 'data-focus': 'continue',
                 onClick: () => actions.send('continueTrick'),
               },
-              available.canContinueTrick ? 'Continue' : 'Waiting for the others',
+              available.canContinueTrick ? t('actions.between.continue') : t('actions.between.waitingOthers'),
             ),
             available.canDeclarePair
               ? h(
                   'button',
                   { 'data-focus': 'declare', onClick: () => actions.send('declarePair') },
-                  'Declare marriage',
+                  t('actions.between.declare'),
                 )
               : null,
           ),
           h(
             'p',
             { class: 'hint' },
-            `${hand.ack.acknowledged.length} of 4 have confirmed. Everyone sees this pause.`,
+            t('actions.between.confirmed', { count: hand.ack.acknowledged.length }),
           ),
         );
       }
@@ -874,15 +897,15 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
       return h(
         'div',
         { class: 'card-panel' },
-        h('h2', {}, yourTurn ? 'Your turn' : 'Play'),
+        h('h2', {}, yourTurn ? t('actions.play.headingYourTurn') : t('actions.play.headingPlay')),
         h(
           'p',
           { role: 'status' },
           yourTurn
             ? state.selectedCard
-              ? `Selected ${cardAccessibleLabel(state.selectedCard)}.`
-              : 'Choose a card, then confirm.'
-            : `Waiting for ${snapshot.seats[hand?.turn ?? 0]?.name ?? 'the next player'}.`,
+              ? t('actions.play.selected', { card: cardAccessibleLabel(state.selectedCard) })
+              : t('actions.play.chooseCard')
+            : t('actions.play.waiting', { name: snapshot.seats[hand?.turn ?? 0]?.name ?? t('actions.auction.nextPlayer') }),
         ),
         h(
           'div',
@@ -895,13 +918,13 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
               'data-focus': 'play',
               onClick: () => actions.send('playCard', { card: state.selectedCard }),
             },
-            'Play card',
+            t('actions.play.button'),
           ),
           available.canRevealTrump
             ? h(
                 'button',
                 { 'data-focus': 'reveal', onClick: () => actions.send('revealTrump') },
-                'Reveal trump',
+                t('actions.play.reveal'),
               )
             : null,
         ),
@@ -909,7 +932,7 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
           ? h(
               'p',
               { class: 'hint' },
-              'You cannot follow the led suit. Reveal trump and you must then play trump if you hold one, or discard and keep it hidden.',
+              t('actions.play.revealHint'),
             )
           : null,
       );
@@ -919,13 +942,13 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
     case 'MATCH_RESULT':
       return matchResultPanel(state, actions);
     default:
-      return h('div', { class: 'card-panel', role: 'status' }, h('p', {}, 'Dealing…'));
+      return h('div', { class: 'card-panel', role: 'status' }, h('p', {}, t('actions.dealing')));
   }
 }
 
 function auctionHistory(snapshot: Snapshot): HTMLElement {
   const history = snapshot.match?.hand?.auction.history ?? [];
-  if (history.length === 0) return h('p', { class: 'hint' }, 'No bids yet.');
+  if (history.length === 0) return h('p', { class: 'hint' }, t('actions.auction.noBids'));
   return h(
     'ol',
     { class: 'log' },
@@ -933,9 +956,12 @@ function auctionHistory(snapshot: Snapshot): HTMLElement {
       h(
         'li',
         {},
-        `${snapshot.seats[entry.seat]?.name ?? seatLabel(entry.seat)}: ${
-          entry.action === 'pass' ? 'passed' : `bid ${entry.value}${entry.forced ? ' (forced)' : ''}`
-        }`,
+        entry.action === 'pass'
+          ? t('actions.auction.entryPassed', { player: snapshot.seats[entry.seat]?.name ?? seatLabel(entry.seat) })
+          : t(entry.forced ? 'actions.auction.entryBidForced' : 'actions.auction.entryBid', {
+              player: snapshot.seats[entry.seat]?.name ?? seatLabel(entry.seat),
+              value: entry.value as number,
+            }),
       ),
     ),
   );
@@ -945,38 +971,46 @@ function handResultPanel(state: UiState, actions: Actions): HTMLElement {
   const snapshot = state.snapshot as Snapshot;
   const match = snapshot.match;
   const result = match?.hand?.result ?? match?.history.at(-1) ?? null;
-  if (!result) return h('div', { class: 'card-panel' }, h('p', {}, 'Scoring…'));
+  if (!result) return h('div', { class: 'card-panel' }, h('p', {}, t('result.scoring')));
   const rows: [string, string][] = result.annulled
     ? [
-        ['Bid', `${result.bid} by ${seatLabel(result.bidder)}`],
-        ['Outcome', 'Hand annulled: trump was not revealed'],
-        ['Match points', 'No change'],
+        [t('result.bid'), t('result.bidValue', { bid: result.bid, seat: seatLabel(result.bidder) })],
+        [t('result.outcome'), t('result.annulledOutcome')],
+        [t('result.matchPoints'), t('result.noChange')],
       ]
     : [
-        ['Bid', `${result.bid} by ${seatLabel(result.bidder)} (${TEAM_NAMES[result.bidderTeam]})`],
-        ['Marriage adjustment', result.pairAdjustment === 0 ? 'None' : `${result.pairAdjustment > 0 ? '+' : ''}${result.pairAdjustment}`],
-        ['Target', String(result.target)],
-        ['Team A card points', String(result.capturedPoints[0])],
-        ['Team B card points', String(result.capturedPoints[1])],
-        ['Stake', `×${result.stake}`],
-        ['Contract', result.contractMade ? 'Made' : 'Failed'],
+        [t('result.bid'), t('result.bidValueTeam', { bid: result.bid, seat: seatLabel(result.bidder), team: teamName(result.bidderTeam) })],
+        [t('result.pairAdjustment'), result.pairAdjustment === 0 ? t('result.none') : `${result.pairAdjustment > 0 ? '+' : ''}${result.pairAdjustment}`],
+        [t('result.target'), String(result.target)],
+        [t('result.cardPoints', { team: teamName(0) }), String(result.capturedPoints[0])],
+        [t('result.cardPoints', { team: teamName(1) }), String(result.capturedPoints[1])],
+        [t('result.stake'), t('status.stakeValue', { stake: result.stake })],
+        [t('result.contract'), result.contractMade ? t('result.made') : t('result.failed')],
         [
-          'Match points',
-          `Team A ${result.scoreDelta[0] >= 0 ? '+' : ''}${result.scoreDelta[0]}, Team B ${result.scoreDelta[1] >= 0 ? '+' : ''}${result.scoreDelta[1]}`,
+          t('result.matchPoints'),
+          t('result.deltas', {
+            team0: teamName(0),
+            delta0: `${result.scoreDelta[0] >= 0 ? '+' : ''}${result.scoreDelta[0]}`,
+            team1: teamName(1),
+            delta1: `${result.scoreDelta[1] >= 0 ? '+' : ''}${result.scoreDelta[1]}`,
+          }),
         ],
-        ['Score now', `Team A ${result.scoresAfter[0]} · Team B ${result.scoresAfter[1]}`],
+        [
+          t('result.scoreNow'),
+          t('result.scoreNowValue', { team0: teamName(0), score0: result.scoresAfter[0], team1: teamName(1), score1: result.scoresAfter[1] }),
+        ],
       ];
   return h(
     'div',
     { class: 'card-panel' },
-    h('h2', {}, `Hand ${result.handNumber} result`),
+    h('h2', {}, t('result.heading', { n: result.handNumber })),
     h(
       'table',
       { class: 'scores' },
       h('tbody', {}, ...rows.map(([label, value]) => h('tr', {}, h('th', { scope: 'row' }, label), h('td', {}, value)))),
     ),
     match?.matchResult
-      ? h('p', {}, `${TEAM_NAMES[match.matchResult.winner]} has won the match.`)
+      ? h('p', {}, t('result.matchWon', { team: teamName(match.matchResult.winner) }))
       : null,
     h(
       'div',
@@ -989,10 +1023,10 @@ function handResultPanel(state: UiState, actions: Actions): HTMLElement {
           'data-focus': 'next-hand',
           onClick: () => actions.send('nextHand'),
         },
-        match?.actions.canNextHand ? 'Next hand' : 'Waiting for the others',
+        match?.actions.canNextHand ? t('result.nextHand') : t('result.waitingOthers'),
       ),
     ),
-    h('p', { class: 'hint' }, `${match?.continues.length ?? 0} of 4 ready to continue.`),
+    h('p', { class: 'hint' }, t('result.readyCount', { count: match?.continues.length ?? 0 })),
   );
 }
 
@@ -1003,8 +1037,8 @@ function matchResultPanel(state: UiState, actions: Actions): HTMLElement {
   return h(
     'div',
     { class: 'card-panel' },
-    h('h2', {}, `${TEAM_NAMES[winner]} wins the match`),
-    h('p', {}, `Final score: Team A ${match?.scores[0] ?? 0}, Team B ${match?.scores[1] ?? 0}.`),
+    h('h2', {}, t('matchResult.heading', { team: teamName(winner) })),
+    h('p', {}, t('matchResult.finalScore', { team0: teamName(0), score0: match?.scores[0] ?? 0, team1: teamName(1), score1: match?.scores[1] ?? 0 })),
     h(
       'table',
       { class: 'scores' },
@@ -1014,10 +1048,10 @@ function matchResultPanel(state: UiState, actions: Actions): HTMLElement {
         h(
           'tr',
           {},
-          h('th', { scope: 'col' }, 'Hand'),
-          h('th', { scope: 'col' }, 'Contract'),
-          h('th', { scope: 'col' }, 'Result'),
-          h('th', { scope: 'col' }, 'Score'),
+          h('th', { scope: 'col' }, t('matchResult.colHand')),
+          h('th', { scope: 'col' }, t('matchResult.colContract')),
+          h('th', { scope: 'col' }, t('matchResult.colResult')),
+          h('th', { scope: 'col' }, t('matchResult.colScore')),
         ),
       ),
       h(
@@ -1028,9 +1062,9 @@ function matchResultPanel(state: UiState, actions: Actions): HTMLElement {
             'tr',
             {},
             h('td', {}, String(entry.handNumber)),
-            h('td', {}, `${entry.bid} by ${seatLabel(entry.bidder)} ×${entry.stake}`),
-            h('td', {}, entry.annulled ? 'Annulled' : entry.contractMade ? 'Made' : 'Failed'),
-            h('td', {}, `${entry.scoresAfter[0]} – ${entry.scoresAfter[1]}`),
+            h('td', {}, t('matchResult.contractValue', { bid: entry.bid, seat: seatLabel(entry.bidder), stake: entry.stake })),
+            h('td', {}, entry.annulled ? t('matchResult.annulled') : entry.contractMade ? t('matchResult.made') : t('matchResult.failed')),
+            h('td', {}, t('matchResult.scoreValue', { a: entry.scoresAfter[0], b: entry.scoresAfter[1] })),
           ),
         ),
       ),
@@ -1046,11 +1080,11 @@ function matchResultPanel(state: UiState, actions: Actions): HTMLElement {
           'data-focus': 'rematch',
           onClick: () => actions.send('rematch'),
         },
-        match?.actions.canRematch ? 'Rematch' : 'Waiting for the others',
+        match?.actions.canRematch ? t('matchResult.rematch') : t('matchResult.waitingOthers'),
       ),
-      h('button', { onClick: () => actions.navigate('/') }, 'Leave'),
+      h('button', { onClick: () => actions.navigate('/') }, t('matchResult.leave')),
     ),
-    h('p', { class: 'hint' }, 'A rematch keeps the same seats and resets both scores.'),
+    h('p', { class: 'hint' }, t('matchResult.rematchHint')),
   );
 }
 
@@ -1063,8 +1097,8 @@ function handPanel(state: UiState, actions: Actions): HTMLElement {
   const selectable = match?.phase === 'PLAYING' && !hand.ack && legal.length > 0;
   return h(
     'section',
-    { 'aria-label': 'Your hand' },
-    h('h2', {}, 'Your hand'),
+    { class: 'hand-panel', 'aria-label': t('hand.heading') },
+    h('h2', {}, t('hand.heading')),
     h(
       'ul',
       { class: 'hand' },
@@ -1084,9 +1118,9 @@ function handPanel(state: UiState, actions: Actions): HTMLElement {
       ? h(
           'p',
           {},
-          h('span', { class: 'hint' }, 'Reserved seventh card (not playable until trump is revealed): '),
+          h('span', { class: 'hint' }, t('card.reservedLabel')),
           card(hand.reservedCard.card as CardId, { reserved: true }),
-          h('span', { class: 'hint' }, ` Trump will be ${SUIT_NAMES[hand.reservedCard.suit]}.`),
+          h('span', { class: 'hint' }, t('card.reservedTrump', { suit: suitName(hand.reservedCard.suit) })),
         )
       : null,
   );
@@ -1095,7 +1129,7 @@ function handPanel(state: UiState, actions: Actions): HTMLElement {
 export function roomView(state: UiState, actions: Actions): HTMLElement {
   const snapshot = state.snapshot;
   if (!snapshot) {
-    return h('main', { id: 'main', class: 'screen' }, h('h1', {}, '29'), h('p', {}, 'Loading the table…'));
+    return h('main', { id: 'main', class: 'screen' }, clubHeader(), h('h1', {}, t('app.brand')), h('p', {}, t('app.loadingTable')));
   }
   if (snapshot.room.status === 'closed' || snapshot.room.status === 'expired') {
     return closedView({ ...state, statusDetail: snapshot.room.status }, actions);
@@ -1110,33 +1144,36 @@ export function roomView(state: UiState, actions: Actions): HTMLElement {
     {},
     connectionBanner(state),
     snapshot.room.expiryWarning
-      ? h('div', { class: 'banner', role: 'status' }, 'This room closes soon unless someone acts.')
+      ? h('div', { class: 'banner', role: 'status' }, t('connection.expiryWarning'))
       : null,
     h(
       'main',
       { id: 'main', class: 'screen' },
-      h('h1', {}, snapshot.room.status === 'lobby' ? 'Lobby' : 'Table'),
+      clubHeader(),
+      h('h1', {}, snapshot.room.status === 'lobby' ? t('room.headingLobby') : t('room.headingTable')),
       notice(state, actions),
       snapshot.room.status === 'lobby'
         ? lobbyPanel(state, actions)
         : fragment(
             statusLine(snapshot),
-            h(
-              'div',
-              { class: 'table' },
-              seatBox(snapshot, partner, 'partner'),
-              seatBox(snapshot, left, 'left'),
-              trickArea(snapshot),
-              seatBox(snapshot, right, 'right'),
-              seatBox(snapshot, you.seat, 'you'),
+            h('div', { class: 'game-layout' },
+              h('div', { class: 'game-table-column' },
+                h('div', { class: 'table' },
+                  seatBox(snapshot, partner, 'partner'),
+                  seatBox(snapshot, left, 'left'),
+                  trickArea(snapshot),
+                  seatBox(snapshot, right, 'right'),
+                  seatBox(snapshot, you.seat, 'you'),
+                ),
+                handPanel(state, actions),
+              ),
+              h('aside', { class: 'game-actions', 'aria-label': t('actions.regionLabel') }, actionPanel(state, actions)),
             ),
-            actionPanel(state, actions),
-            handPanel(state, actions),
             state.log.length > 0
               ? h(
                   'details',
                   { class: 'rules' },
-                  h('summary', {}, 'Recent actions'),
+                  h('summary', {}, t('room.recentActions')),
                   h('ul', { class: 'log' }, ...state.log.slice(-20).reverse().map((line) => h('li', {}, line))),
                 )
               : null,
@@ -1145,7 +1182,7 @@ export function roomView(state: UiState, actions: Actions): HTMLElement {
       h(
         'p',
         { class: 'hint' },
-        `You are ${you.name}, ${seatLabel(you.seat)}, ${TEAM_NAMES[you.team]}. Rules version ${snapshot.room.rulesVersion}.`,
+        t('room.youAre', { name: you.name, seat: seatLabel(you.seat), team: teamName(you.team), version: snapshot.room.rulesVersion }),
       ),
     ),
   );

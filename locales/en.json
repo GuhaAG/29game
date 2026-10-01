@@ -1,0 +1,492 @@
+{
+  "_readme": "Every piece of player-facing text lives in this file. Edit the values (the right-hand side) in any editor, save, and reload the page; no rebuild is needed. {name} style words are filled in by the app, so keep them exactly as written, but you may move them around. To add a language, copy this file to locales/<code>.json (e.g. fr.json), translate it, and start the server with LOCALE=<code>. Anything missing from a translation falls back to this English file.",
+  "app": {
+    "title": "29 — private four-player card game",
+    "skipLink": "Skip to main content",
+    "loading": "Loading…",
+    "loadingTable": "Loading the table…",
+    "brand": "29",
+    "genericError": "Something went wrong. Please try again.",
+    "offline": "No connection to the server. Check your network."
+  },
+  "header": {
+    "homeLabel": "29 home",
+    "tagline": "A table for four",
+    "private": "Private game"
+  },
+  "footer": {
+    "left": "Four players. Two teams. No accounts.",
+    "right": "Made for your kind of game. ♠"
+  },
+  "common": {
+    "dismiss": "Dismiss",
+    "back": "Back",
+    "continue": "Continue",
+    "pass": "Pass",
+    "empty": "Empty",
+    "screenName": "Your screen name",
+    "someone": "Someone"
+  },
+  "teams": [
+    "Team A",
+    "Team B"
+  ],
+  "seat": {
+    "label": "Seat {n}",
+    "withTeam": "{seat} — {team}",
+    "short": "{seat} · {team}",
+    "takenBy": "{seat} — {team}: {name} (taken)"
+  },
+  "suits": {
+    "S": {
+      "name": "Spades",
+      "symbol": "♠"
+    },
+    "H": {
+      "name": "Hearts",
+      "symbol": "♥"
+    },
+    "D": {
+      "name": "Diamonds",
+      "symbol": "♦"
+    },
+    "C": {
+      "name": "Clubs",
+      "symbol": "♣"
+    }
+  },
+  "ranks": {
+    "J": "Jack",
+    "9": "Nine",
+    "A": "Ace",
+    "T": "Ten",
+    "K": "King",
+    "Q": "Queen",
+    "8": "Eight",
+    "7": "Seven"
+  },
+  "rankFaces": {
+    "_note": "What is printed on the face of each card.",
+    "J": "J",
+    "9": "9",
+    "A": "A",
+    "T": "10",
+    "K": "K",
+    "Q": "Q",
+    "8": "8",
+    "7": "7"
+  },
+  "card": {
+    "label": "{rank} of {suit}",
+    "notPlayableSuffix": ", not playable now",
+    "count": {
+      "one": "{count} card",
+      "other": "{count} cards"
+    },
+    "reservedLabel": "Reserved seventh card (not playable until trump is revealed): ",
+    "reservedTrump": " Trump will be {suit}."
+  },
+  "home": {
+    "eyebrow": "Play the 29 game.",
+    "headlineLine1": "Private table.",
+    "headlineLine2": "Private game.",
+    "lede": "",
+    "hint": "A private table for exactly four people. No accounts, no downloads.",
+    "createButton": "Create game",
+    "createArrow": " ↗",
+    "joinHeading": "Join a game",
+    "joinHint": "Use the link or code your host shared with you.",
+    "joinLabel": "Room link or room code",
+    "joinPlaceholder": "Paste your link or code",
+    "joinButton": "Continue",
+    "artCaption": ""
+  },
+  "create": {
+    "heading": "Create a game",
+    "nameHint": "Up to 24 characters. Everyone picks their own name.",
+    "seatLegend": "Your seat",
+    "seatHint": "Seats 1 and 3 are partners; seats 2 and 4 are partners.",
+    "submit": "Create game"
+  },
+  "gate": {
+    "heading": "Enter the room password",
+    "lede": "The host shares this privately. It is not part of the room link.",
+    "passwordLabel": "Room password",
+    "passwordHint": "Upper or lower case, with or without the hyphens.",
+    "submit": "Continue",
+    "lostSeatSummary": "Lost your seat after closing the browser?",
+    "lostSeatBody": "Ask the host for a recovery code for your seat, then enter it here.",
+    "recoveryLabel": "Recovery code",
+    "recoverButton": "Recover my seat"
+  },
+  "join": {
+    "heading": "Choose your name and seat",
+    "freeSeats": "Free seats",
+    "full": "Every seat is taken in this room.",
+    "submit": "Join this table"
+  },
+  "recover": {
+    "heading": "Recover your seat",
+    "codeLabel": "One-time recovery code",
+    "codeHint": "The host can issue one after checking who you are.",
+    "submit": "Recover my seat"
+  },
+  "closed": {
+    "heading": "This room is closed",
+    "expired": "The room expired. Rooms close after a period without activity, and after 24 hours at the latest.",
+    "closed": "The host closed this room, or it is no longer available.",
+    "home": "Back to the start"
+  },
+  "connection": {
+    "reconnecting": "Reconnecting—actions paused",
+    "connecting": "Connecting…",
+    "replaced": "This seat is open in another tab. This view is no longer active.",
+    "disconnected": "Disconnected.",
+    "expiryWarning": "This room closes soon unless someone acts."
+  },
+  "room": {
+    "headingLobby": "Lobby",
+    "headingTable": "Table",
+    "youAre": "You are {name}, {seat}, {team}. Rules version {version}.",
+    "recentActions": "Recent actions"
+  },
+  "lobby": {
+    "heading": "Lobby",
+    "host": "Host",
+    "connected": "Connected",
+    "away": "Away",
+    "ready": "Ready",
+    "notReady": "Not ready",
+    "detailsHeading": "Your details",
+    "changeName": "Change my name",
+    "clearsReady": "Changing your name or seat clears everyone’s ready mark.",
+    "moveTo": "Move to {seat} ({team})",
+    "readyButton": "I am ready",
+    "unreadyButton": "Not ready yet"
+  },
+  "host": {
+    "heading": "Host controls",
+    "shareHint": "Share the link and the password separately, and only with your three players.",
+    "copyLink": "Copy room link",
+    "copyPassword": "Copy password",
+    "showPassword": "Show room password",
+    "start": "Start match",
+    "newPassword": "New password",
+    "closeRoom": "Close room",
+    "startHint": "Start becomes available when all four seats are filled, connected and ready.",
+    "remove": "Remove {name}",
+    "recoveryFor": "One-time recovery code for {seat} (valid five minutes):",
+    "recoveryGive": "Give it to that person directly. It works once.",
+    "roomLinkLabel": "Room link",
+    "roomPasswordLabel": "Room password"
+  },
+  "status": {
+    "hand": "Hand",
+    "dealer": "Dealer",
+    "contract": "Contract",
+    "stake": "Stake",
+    "trump": "Trump",
+    "trick": "Trick",
+    "contractAuction": "in the auction",
+    "contractValue": "{bid} by {seat}",
+    "stakeValue": "×{stake}",
+    "trumpNone": "—",
+    "trumpRevealed": "{suit} {symbol}",
+    "trumpHidden": "Hidden",
+    "trumpHiddenYours": "Hidden (yours: {suit})",
+    "trumpNotChosen": "Not chosen",
+    "trickValue": "{n} of 8"
+  },
+  "table": {
+    "away": "away",
+    "dealer": "dealer",
+    "contract": "contract",
+    "readyNext": "ready for next trick",
+    "confirming": "confirming",
+    "toPlay": "to play",
+    "trickLabel": "Cards played to the current trick",
+    "noCards": "No cards yet"
+  },
+  "actions": {
+    "regionLabel": "Game actions",
+    "dealing": "Dealing…",
+    "paused": {
+      "heading": "Paused",
+      "waiting": "Waiting for {names} to reconnect. Nothing is lost.",
+      "hint": "The host can issue a recovery code, or all remaining players can end the match with no winner.",
+      "recoveryFor": "Recovery code for {seat}",
+      "recoveryShown": "Recovery code for {seat}:",
+      "endMatch": "End match, no winner"
+    },
+    "auction": {
+      "heading": "Auction",
+      "waiting": "Waiting for {name} to bid.",
+      "nextPlayer": "the next player",
+      "yourBid": "Your bid",
+      "bidsLabel": "Available bids",
+      "bid": "Bid",
+      "bidValue": "Bid {value}",
+      "noBids": "No bids yet.",
+      "entryPassed": "{player}: passed",
+      "entryBid": "{player}: bid {value}",
+      "entryBidForced": "{player}: bid {value} (forced)"
+    },
+    "trump": {
+      "heading": "Trump",
+      "waiting": "{name} is choosing trump.",
+      "contractHolder": "The contract holder",
+      "choose": "Choose trump",
+      "secretHint": "Only you will see the suit until it is revealed in play.",
+      "seventhButton": "Seventh card",
+      "seventhHint": "Seventh card: trump becomes the suit of the seventh card of your own deal, held aside until the reveal."
+    },
+    "double": {
+      "headingWait": "Double",
+      "headingAsk": "Double?",
+      "button": "Double",
+      "explain": "A double makes the hand worth two match points either way."
+    },
+    "redouble": {
+      "headingWait": "Redouble",
+      "headingAsk": "Redouble?",
+      "button": "Redouble",
+      "explain": "A redouble makes the hand worth four match points either way."
+    },
+    "waitingDecision": "Waiting for {name}.",
+    "aDecision": "a decision",
+    "between": {
+      "heading": "Between tricks",
+      "won": "{seat} won trick {n} for {points} points.",
+      "continue": "Continue",
+      "waitingOthers": "Waiting for the others",
+      "declare": "Declare marriage",
+      "confirmed": "{count} of 4 have confirmed. Everyone sees this pause."
+    },
+    "play": {
+      "headingYourTurn": "Your turn",
+      "headingPlay": "Play",
+      "chooseCard": "Choose a card, then confirm.",
+      "selected": "Selected {card}.",
+      "waiting": "Waiting for {name}.",
+      "button": "Play card",
+      "reveal": "Reveal trump",
+      "revealHint": "You cannot follow the led suit. Reveal trump and you must then play trump if you hold one, or discard and keep it hidden."
+    }
+  },
+  "hand": {
+    "heading": "Your hand"
+  },
+  "result": {
+    "heading": "Hand {n} result",
+    "scoring": "Scoring…",
+    "bid": "Bid",
+    "outcome": "Outcome",
+    "matchPoints": "Match points",
+    "bidValue": "{bid} by {seat}",
+    "bidValueTeam": "{bid} by {seat} ({team})",
+    "annulledOutcome": "Hand annulled: trump was not revealed",
+    "noChange": "No change",
+    "pairAdjustment": "Marriage adjustment",
+    "none": "None",
+    "target": "Target",
+    "cardPoints": "{team} card points",
+    "stake": "Stake",
+    "contract": "Contract",
+    "made": "Made",
+    "failed": "Failed",
+    "deltas": "{team0} {delta0}, {team1} {delta1}",
+    "scoreNow": "Score now",
+    "scoreNowValue": "{team0} {score0} · {team1} {score1}",
+    "matchWon": "{team} has won the match.",
+    "nextHand": "Next hand",
+    "waitingOthers": "Waiting for the others",
+    "readyCount": "{count} of 4 ready to continue."
+  },
+  "matchResult": {
+    "heading": "{team} wins the match",
+    "finalScore": "Final score: {team0} {score0}, {team1} {score1}.",
+    "colHand": "Hand",
+    "colContract": "Contract",
+    "colResult": "Result",
+    "colScore": "Score",
+    "contractValue": "{bid} by {seat} ×{stake}",
+    "annulled": "Annulled",
+    "made": "Made",
+    "failed": "Failed",
+    "scoreValue": "{a} – {b}",
+    "rematch": "Rematch",
+    "waitingOthers": "Waiting for the others",
+    "leave": "Leave",
+    "rematchHint": "A rematch keeps the same seats and resets both scores."
+  },
+  "notices": {
+    "roomCreated": "Room created. Share the link and password separately.",
+    "passwordReplaced": "The room password has been replaced. Share the new one privately.",
+    "seatRecovered": "Your seat is back. Any older session for it has been signed out.",
+    "reconnecting": "Reconnecting—actions paused. Your action was not sent.",
+    "copied": "{label} copied. Share it privately.",
+    "copyFailed": "Copy failed. Select the {label} and copy it manually."
+  },
+  "announce": {
+    "yourTurn": "Your turn to play."
+  },
+  "events": {
+    "bidPlaced": "{player} bid {value}.",
+    "bidPlacedForced": "{player} bid {value} (forced).",
+    "passed": "{player} passed.",
+    "auctionWon": "{player} holds the contract at {value}.",
+    "trumpChosen": "{player} chose trump.",
+    "trumpChosenSeventh": "{player} chose trump from the seventh card.",
+    "doubled": "{player} doubled.",
+    "redoubled": "{player} redoubled.",
+    "trumpRevealed": "{player} revealed trump.",
+    "cardPlayed": "{player} played a card.",
+    "trickCompleted": "{player} won trick {n} for {points} points.",
+    "pairDeclared": "{player} declared a marriage. The target is now {target}.",
+    "handCompleted": "The hand is complete.",
+    "matchCompleted": "The match is complete.",
+    "matchStarted": "The match has started.",
+    "memberJoined": "{name} joined.",
+    "memberRenamed": "{name} changed their name.",
+    "memberRemoved": "Seat {n} was removed by the host.",
+    "hostTransferred": "{player} is now the host.",
+    "passwordRotated": "The host changed the room password.",
+    "matchAbandoned": "The match was ended with no winner."
+  },
+  "rules": {
+    "summary": "Rules of this table",
+    "sections": [
+      {
+        "heading": "Cards and points",
+        "points": [
+          "32 cards: J, 9, A, 10, K, Q, 8, 7 in each suit, listed strongest first.",
+          "Jack 3 points, nine 2 points, ace 1 point, ten 1 point; king, queen, eight and seven score nothing.",
+          "Every hand contains exactly 28 card points. There is no point for the last trick."
+        ]
+      },
+      {
+        "heading": "Seats and teams",
+        "points": [
+          "Four players, seats 1–4 clockwise. Seats opposite one another are partners.",
+          "Seats and teams are locked once the host starts the match."
+        ]
+      },
+      {
+        "heading": "Deal and auction",
+        "points": [
+          "Four cards are dealt to each player, then bidding runs clockwise from the dealer’s left.",
+          "Bids are whole numbers from 16 to 28 and each new bid must beat the previous one.",
+          "If the first three players pass, the dealer is forced to take the contract at 16.",
+          "Otherwise the auction ends after three consecutive passes. A bid of 28 ends it immediately.",
+          "Passing never removes you from the auction; you may bid again on a later turn."
+        ]
+      },
+      {
+        "heading": "Trump",
+        "points": [
+          "The winning bidder secretly picks a trump suit, or picks “seventh card”.",
+          "With “seventh card”, trump is the suit of the seventh card of the bidder’s own deal — the third card of their second batch. That card is held back, outside the playable hand, until trump is revealed.",
+          "Unrevealed trump has no power. Other players only see that trump is hidden."
+        ]
+      },
+      {
+        "heading": "Double and redouble",
+        "points": [
+          "After trump is chosen, each defender in turn may double or pass; the first double closes the window and sets the stake to 2.",
+          "After a double, the bidder and then their partner may redouble or pass; the first redouble sets the stake to 4.",
+          "The stake multiplies match points only. It never changes the bid, the card points, or the marriage adjustment."
+        ]
+      },
+      {
+        "heading": "Play",
+        "points": [
+          "The player to the dealer’s left leads the first trick; afterwards the trick winner leads.",
+          "You must follow the suit led if you can.",
+          "If you cannot follow, you may reveal trump or simply discard. Revealing is only possible on your turn when you cannot follow suit — never while leading.",
+          "A player who asks for the reveal must then play trump if they hold one; after a seventh-card release, following the led suit still comes first.",
+          "Once revealed, trump counts for the whole of the current trick, including cards already played to it. Completed tricks never change.",
+          "The strongest trump wins a trick once trump is live; otherwise the strongest card of the led suit wins.",
+          "If the bidder’s only remaining card is the reserved seventh card, it is revealed and released automatically before they play — the one case where a reveal happens on a lead."
+        ]
+      },
+      {
+        "heading": "Marriage (pair)",
+        "points": [
+          "After any trick except the last, every player confirms “Continue”.",
+          "In that window, a player holding both the trump king and queen may declare a marriage, provided trump has been revealed and their team just won the trick.",
+          "A marriage lowers the bidder’s target by 4, or raises it by 4 when the defenders declare; the target always stays between 16 and 28.",
+          "Only one marriage counts per hand, and the two cards stay in the holder’s hand."
+        ]
+      },
+      {
+        "heading": "Scoring",
+        "points": [
+          "The bidding team succeeds when its captured card points reach the adjusted target.",
+          "Success adds the stake (1, 2 or 4) to the bidding team’s match score; failure subtracts it. The other team’s score is unchanged.",
+          "If trump is never revealed the hand is annulled: no match points change and the deal rotates.",
+          "A team reaching +6 or more wins the match; a team reaching −6 or less loses it."
+        ]
+      }
+    ]
+  },
+  "server": {
+    "hostOnly": "Only the host can do that.",
+    "matchAlreadyStarted": "The match has already started.",
+    "matchNotStarted": "The match has not started.",
+    "chooseBid": "Choose a bid.",
+    "chooseTrump": "Choose a trump suit or the seventh card.",
+    "chooseCard": "Choose a card to play.",
+    "unknownAction": "Unknown action.",
+    "unknownRequest": "Unknown request.",
+    "malformed": "Malformed request.",
+    "tooLarge": "That request was too large.",
+    "chooseSeatOfFour": "Choose one of the four seats.",
+    "chooseSeat": "Choose a seat.",
+    "chooseSeatToRemove": "Choose a seat to remove.",
+    "cannotRemoveSelf": "You cannot remove yourself.",
+    "seatAlreadyEmpty": "That seat is already empty.",
+    "seatEmpty": "That seat is empty.",
+    "noMatchToEnd": "There is no match to end.",
+    "everyoneConnected": "Everyone is connected; the match can continue.",
+    "unableToContinue": "Unable to continue the match.",
+    "nameNotAllowed": "That screen name is not allowed.",
+    "nameTaken": "That screen name is already used in this room.",
+    "seatTaken": "That seat is already taken.",
+    "seatJustTaken": "That seat was just taken. Pick another one.",
+    "fillAllSeats": "All four seats must be filled before starting.",
+    "everyoneReady": "Everyone must be connected and ready before starting.",
+    "notInRoom": "You are no longer part of this room.",
+    "requestReused": "That request was already used for a different action.",
+    "roomUnavailable": "This room is no longer available.",
+    "roomClosed": "This room has been closed.",
+    "roomExpired": "This room has expired.",
+    "roomExpiredCreateNew": "This room has expired. Create a new room to play again.",
+    "roomNotFound": "That room no longer exists.",
+    "notFound": "Not found.",
+    "roomNotAccepting": "This room is not accepting new players.",
+    "matchAlreadyStartedRoom": "This match has already started.",
+    "allSeatsTaken": "All four seats are taken.",
+    "seatGone": "That seat is no longer in the room.",
+    "staleState": "The table changed while you were deciding.",
+    "paused": "Play is paused until everyone is reconnected.",
+    "secureRequired": "A secure connection is required.",
+    "badOrigin": "That request came from an unexpected origin.",
+    "csrf": "That request could not be verified. Reload the page and try again.",
+    "badRoomLink": "That room link or password is not valid.",
+    "accessInvalid": "That access is invalid or has expired.",
+    "passwordChanged": "The room password changed. Ask the host for the new one.",
+    "recoveryInvalid": "That recovery code is not valid.",
+    "recoveryUsed": "That recovery code is not valid or has already been used.",
+    "tooManyAttempts": "Too many attempts. Please wait a moment and try again.",
+    "slowDown": "Slow down for a moment and try again.",
+    "genericError": "Something went wrong. Please try again.",
+    "engineNotYourTurn": "It is not your turn.",
+    "engineWrongPhase": "That action is not available right now.",
+    "engineIllegal": "That move is not allowed.",
+    "seatReplaced": "This seat was opened in another tab or window. This view is no longer active.",
+    "expiringSoon": "This room will close soon if nobody acts.",
+    "nameEmpty": "Enter a screen name.",
+    "nameBadChars": "That name contains characters that are not allowed.",
+    "nameTooLong": "Use at most {max} characters."
+  }
+}

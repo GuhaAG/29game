@@ -1,20 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{locale}}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="light" />
     <meta name="referrer" content="no-referrer" />
-    <title>29 — private four-player card game</title>
+    <title>{{app.title}}</title>
     <link rel="stylesheet" href="/styles.css" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%99%A0%3C/text%3E%3C/svg%3E" />
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to main content</a>
+    <a class="skip-link" href="#main">{{app.skipLink}}</a>
     <div id="app">
       <main id="main" class="screen">
-        <h1>29</h1>
-        <p>Loading&hellip;</p>
+        <h1>{{app.brand}}</h1>
+        <p>{{app.loading}}</p>
       </main>
     </div>
     <div id="announcer" class="visually-hidden" role="status" aria-live="polite"></div>

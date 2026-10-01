@@ -3,6 +3,7 @@ import type { Snapshot } from '../shared/wire';
 import { RequestFailed, api } from './api';
 import { alertNow, announce, mount } from './dom';
 import { RoomSocket, type ServerMessage, type SocketStatus } from './socket';
+import { loadText, t } from './text';
 import {
   type Actions,
   type UiState,
@@ -83,60 +84,61 @@ function failureNotice(error: unknown): void {
     setNotice('error', error.info.message);
     return;
   }
-  setNotice('error', 'Something went wrong. Please try again.');
+  setNotice('error', t('app.genericError'));
 }
 
 function seatName(seat: number): string {
-  return state.snapshot?.seats[seat]?.name ?? `Seat ${seat + 1}`;
+  return state.snapshot?.seats[seat]?.name ?? t('seat.label', { n: seat + 1 });
 }
 
 /** Public announcements only: nothing private ever reaches the live region. */
 function describeEvent(event: { type: string; actorSeat: number | null; payload: Record<string, unknown> }): string | null {
-  const actor = event.actorSeat === null ? 'Someone' : seatName(event.actorSeat);
+  const actor = event.actorSeat === null ? t('common.someone') : seatName(event.actorSeat);
   const payload = (event.payload ?? {}) as Record<string, unknown>;
+  const player = (): string => seatName(payload.seat as number);
   switch (event.type) {
     case 'game.bidPlaced':
-      return `${seatName(payload.seat as number)} bid ${payload.value}${payload.forced ? ' (forced)' : ''}.`;
+      return t(payload.forced ? 'events.bidPlacedForced' : 'events.bidPlaced', { player: player(), value: String(payload.value) });
     case 'game.passed':
-      return `${seatName(payload.seat as number)} passed.`;
+      return t('events.passed', { player: player() });
     case 'game.auctionWon':
-      return `${seatName(payload.seat as number)} holds the contract at ${payload.value}.`;
+      return t('events.auctionWon', { player: player(), value: String(payload.value) });
     case 'game.trumpChosen':
-      return `${actor} chose trump${payload.mode === 'seventh' ? ' from the seventh card' : ''}.`;
+      return t(payload.mode === 'seventh' ? 'events.trumpChosenSeventh' : 'events.trumpChosen', { player: actor });
     case 'game.doubled':
-      return `${seatName(payload.seat as number)} doubled.`;
+      return t('events.doubled', { player: player() });
     case 'game.redoubled':
-      return `${seatName(payload.seat as number)} redoubled.`;
+      return t('events.redoubled', { player: player() });
     case 'game.trumpRevealed':
-      return `${seatName(payload.seat as number)} revealed trump.`;
+      return t('events.trumpRevealed', { player: player() });
     case 'game.cardPlayed':
-      return `${seatName(payload.seat as number)} played a card.`;
+      return t('events.cardPlayed', { player: player() });
     case 'game.trickCompleted': {
       const trick = payload.trick as { winner: number; points: number; index: number };
-      return `${seatName(trick.winner)} won trick ${trick.index + 1} for ${trick.points} points.`;
+      return t('events.trickCompleted', { player: seatName(trick.winner), n: trick.index + 1, points: trick.points });
     }
     case 'game.pairDeclared': {
       const pair = payload.pair as { seat: number };
-      return `${seatName(pair.seat)} declared a marriage. The target is now ${payload.target}.`;
+      return t('events.pairDeclared', { player: seatName(pair.seat), target: String(payload.target) });
     }
     case 'game.handCompleted':
-      return 'The hand is complete.';
+      return t('events.handCompleted');
     case 'game.matchCompleted':
-      return 'The match is complete.';
+      return t('events.matchCompleted');
     case 'match.started':
-      return 'The match has started.';
+      return t('events.matchStarted');
     case 'member.joined':
-      return `${payload.name} joined.`;
+      return t('events.memberJoined', { name: String(payload.name) });
     case 'member.renamed':
-      return `${payload.name} changed their name.`;
+      return t('events.memberRenamed', { name: String(payload.name) });
     case 'member.removed':
-      return `Seat ${(payload.seat as number) + 1} was removed by the host.`;
+      return t('events.memberRemoved', { n: (payload.seat as number) + 1 });
     case 'room.hostTransferred':
-      return `${seatName(payload.seat as number)} is now the host.`;
+      return t('events.hostTransferred', { player: player() });
     case 'room.passwordRotated':
-      return 'The host changed the room password.';
+      return t('events.passwordRotated');
     case 'match.abandoned':
-      return 'The match was ended with no winner.';
+      return t('events.matchAbandoned');
     default:
       return null;
   }
@@ -159,7 +161,7 @@ function applySnapshot(snapshot: Snapshot): void {
   lastTurn = hand?.turn ?? null;
   lastPhase = phase;
   if (phase === 'PLAYING' && hand && hand.turn === snapshot.you.seat && !hand.ack) {
-    announce('Your turn to play.');
+    announce(t('announce.yourTurn'));
   }
 }
 
@@ -192,7 +194,7 @@ function handleMessage(message: ServerMessage): void {
       const reply = message.reply as Record<string, unknown> | null;
       if (reply?.password) {
         state.hostPassword = String(reply.password);
-        setNotice('info', 'The room password has been replaced. Share the new one privately.');
+        setNotice('info', t('notices.passwordReplaced'));
       }
       if (reply?.recoveryCode) {
         state.recovery = {
@@ -288,7 +290,7 @@ const actions: Actions = {
         state.view = 'room';
         connect(created.roomId);
         void refreshState();
-        setNotice('info', 'Room created. Share the link and password separately.');
+        setNotice('info', t('notices.roomCreated'));
       })
       .catch((error: unknown) => {
         state.busy = false;
@@ -361,7 +363,7 @@ const actions: Actions = {
         state.view = 'room';
         connect(state.roomId as string);
         void refreshState();
-        setNotice('info', 'Your seat is back. Any older session for it has been signed out.');
+        setNotice('info', t('notices.seatRecovered'));
       })
       .catch((error: unknown) => {
         state.busy = false;
@@ -371,7 +373,7 @@ const actions: Actions = {
 
   send(action: string, payload: Record<string, unknown> = {}): void {
     if (!socket || state.status !== 'open') {
-      setNotice('warning', 'Reconnecting—actions paused. Your action was not sent.');
+      setNotice('warning', t('notices.reconnecting'));
       return;
     }
     const sent = socket.send({
@@ -381,7 +383,7 @@ const actions: Actions = {
       action,
       payload,
     });
-    if (!sent) setNotice('warning', 'Reconnecting—actions paused. Your action was not sent.');
+    if (!sent) setNotice('warning', t('notices.reconnecting'));
   },
 
   selectCard(cardId: CardId | null): void {
@@ -397,8 +399,8 @@ const actions: Actions = {
   copy(label: string, value: string): void {
     void navigator.clipboard
       ?.writeText(value)
-      .then(() => setNotice('info', `${label} copied. Share it privately.`))
-      .catch(() => setNotice('warning', `Copy failed. Select the ${label.toLowerCase()} and copy it manually.`));
+      .then(() => setNotice('info', t('notices.copied', { label })))
+      .catch(() => setNotice('warning', t('notices.copyFailed', { label: label.toLowerCase() })));
   },
 
   dismissNotice(): void {
@@ -441,4 +443,4 @@ window.addEventListener('online', () => {
   if (state.roomId && state.status !== 'open') connect(state.roomId);
 });
 
-void route();
+void loadText().then(() => route());

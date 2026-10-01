@@ -5,6 +5,7 @@ import { log, metrics, pseudonym } from './logger';
 import { TokenBucket } from './ratelimit';
 import { buildSnapshot } from './snapshot';
 import { type Room, bumpPresence, getRoom, withRoom } from './state';
+import { t } from './text';
 
 export interface SocketLike {
   send(data: string): void;
@@ -47,7 +48,7 @@ export class Hub {
     if (previous && previous.socket !== socket) {
       this.send(previous, {
         type: 'replaced',
-        message: 'This seat was opened in another tab or window. This view is no longer active.',
+        message: t('server.seatReplaced'),
       });
       previous.closed = true;
       try {
@@ -108,7 +109,7 @@ export class Hub {
     for (const connection of this.connectionsIn(room.id)) {
       const membership = room.memberships.get(connection.membershipId);
       if (!membership) {
-        this.send(connection, { type: 'removed', message: 'You are no longer part of this room.' });
+        this.send(connection, { type: 'removed', message: t('server.notInRoom') });
         continue;
       }
       this.send(connection, {

@@ -13,29 +13,11 @@ export type Rank = (typeof RANKS)[number];
 /** A card id is suit letter + rank letter, e.g. "SJ" = jack of spades. */
 export type CardId = string;
 
-export const SUIT_NAMES: Record<Suit, string> = {
-  S: 'Spades',
-  H: 'Hearts',
-  D: 'Diamonds',
-  C: 'Clubs',
-};
-
 export const SUIT_SYMBOLS: Record<Suit, string> = {
   S: '♠',
   H: '♥',
   D: '♦',
   C: '♣',
-};
-
-export const RANK_NAMES: Record<Rank, string> = {
-  J: 'Jack',
-  '9': 'Nine',
-  A: 'Ace',
-  T: 'Ten',
-  K: 'King',
-  Q: 'Queen',
-  '8': 'Eight',
-  '7': 'Seven',
 };
 
 const RANK_POINTS: Record<Rank, number> = {
@@ -97,8 +79,4 @@ export function cardLabel(card: CardId): string {
   const rank = rankOf(card);
   const display = rank === 'T' ? '10' : rank;
   return `${display}${SUIT_SYMBOLS[suitOf(card)]}`;
-}
-
-export function cardAccessibleLabel(card: CardId): string {
-  return `${RANK_NAMES[rankOf(card)]} of ${SUIT_NAMES[suitOf(card)]}`;
 }

@@ -7,6 +7,7 @@ COPY tsconfig.json tsconfig.client.json ./
 COPY scripts ./scripts
 COPY src ./src
 COPY public ./public
+COPY locales ./locales
 RUN npm run build && npm prune --omit=dev
 
 FROM node:22-alpine
@@ -19,6 +20,7 @@ ENV TRUST_PROXY=1
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
+COPY --from=build /app/locales ./locales
 COPY package.json ./
 USER node
 EXPOSE 3000

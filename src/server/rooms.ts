@@ -30,6 +30,7 @@ import {
   revokeSessionsFor,
   withRoom,
 } from './state';
+import { t } from './text';
 
 export const SESSION_COOKIE = 'seat_session';
 
@@ -39,7 +40,7 @@ function ipBucket(prefix: string, ip: string): string {
 
 function assertSeat(value: unknown): Seat {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 3) {
-    throw new AppError('INVALID', 'Choose one of the four seats.');
+    throw new AppError('INVALID', t('server.chooseSeatOfFour'));
   }
   return value as Seat;
 }
@@ -82,7 +83,7 @@ export async function createRoom(input: {
 }): Promise<CreatedRoom> {
   await enforce(ipBucket('create', input.ip), config.limits.roomCreatePerIp);
   const name = checkDisplayName(input.name);
-  if (!name.ok) throw new AppError('INVALID', name.reason ?? 'That screen name is not allowed.');
+  if (!name.ok) throw new AppError('INVALID', name.reason ?? t('server.nameNotAllowed'));
   const seat = assertSeat(input.seat);
 
   const password = generateRoomPassword();
@@ -125,18 +126,18 @@ export async function requestAdmission(input: {
   const password = typeof input.password === 'string' ? input.password : '';
   // A wrong password and an unknown room are indistinguishable from outside.
   if (!existing || password.length === 0) {
-    return fail(unauthorized('That room link or password is not valid.'));
+    return fail(unauthorized(t('server.badRoomLink')));
   }
 
   return withRoom(input.roomId, async (room) => {
     if (!verifierMatches('password', normalizePassword(password), room.passwordVerifier, room.id)) {
-      return fail(unauthorized('That room link or password is not valid.'));
+      return fail(unauthorized(t('server.badRoomLink')));
     }
     if (room.status !== 'lobby' || room.expiresAt <= Date.now()) {
-      throw new AppError('ROOM_UNAVAILABLE', 'This room is not accepting new players.');
+      throw new AppError('ROOM_UNAVAILABLE', t('server.roomNotAccepting'));
     }
     if (room.memberships.size >= 4) {
-      throw new AppError('ROOM_UNAVAILABLE', 'All four seats are taken.');
+      throw new AppError('ROOM_UNAVAILABLE', t('server.allSeatsTaken'));
     }
     const token = generateToken(32);
     const grantId = randomUUID();
@@ -158,7 +159,7 @@ function checkAdmission(room: Room, grant: unknown): { id: string } {
   const record = room.admissions.get(grantId);
   if (!record || record.consumedAt || record.expiresAt <= Date.now()) throw unauthorized();
   if (record.passwordVersion !== room.passwordVersion) {
-    throw unauthorized('The room password changed. Ask the host for the new one.');
+    throw unauthorized(t('server.passwordChanged'));
   }
   if (!verifierMatches('admission', token, record.verifier, grantId)) throw unauthorized();
   return { id: grantId };
@@ -205,21 +206,21 @@ export async function claimSeat(input: {
   seat: unknown;
 }): Promise<ClaimResult> {
   const check = checkDisplayName(input.name);
-  if (!check.ok) throw new AppError('INVALID', check.reason ?? 'That screen name is not allowed.');
+  if (!check.ok) throw new AppError('INVALID', check.reason ?? t('server.nameNotAllowed'));
   const seat = assertSeat(input.seat);
 
   return withRoom(input.roomId, (room) => {
     requireLiveRoom(room.id);
     if (room.status !== 'lobby') {
-      throw new AppError('ROOM_UNAVAILABLE', 'This match has already started.');
+      throw new AppError('ROOM_UNAVAILABLE', t('server.matchAlreadyStartedRoom'));
     }
     const grant = checkAdmission(room, input.grant);
     const roster = members(room);
     if (roster.some((membership) => membership.seat === seat)) {
-      throw new AppError('SEAT_TAKEN', 'That seat was just taken. Pick another one.');
+      throw new AppError('SEAT_TAKEN', t('server.seatJustTaken'));
     }
     if (roster.some((membership) => membership.nameKey === check.key)) {
-      throw new AppError('NAME_TAKEN', 'That screen name is already used in this room.');
+      throw new AppError('NAME_TAKEN', t('server.nameTaken'));
     }
 
     const membership = addMembership(room, { seat, displayName: check.name, nameKey: check.key });
@@ -256,7 +257,7 @@ export function authenticate(roomId: string, cookieValue: string | undefined): A
   if (!session || session.revokedAt || session.expiresAt <= Date.now()) throw unauthorized();
   if (!verifierMatches('session', token, session.verifier, sessionId)) throw unauthorized();
   const membership = room.memberships.get(session.membershipId);
-  if (!membership) throw unauthorized('You are no longer part of this room.');
+  if (!membership) throw unauthorized(t('server.notInRoom'));
   return { room, membership, session };
 }
 
@@ -306,7 +307,7 @@ export async function redeemRecovery(input: {
   const raw = typeof input.code === 'string' ? input.code.trim() : '';
   if (!raw.includes('.')) {
     await recordFailure(roomBucket, config.limits.failedJoinPerRoomIp);
-    throw unauthorized('That recovery code is not valid.');
+    throw unauthorized(t('server.recoveryInvalid'));
   }
   const [grantId, secret] = raw.split('.', 2) as [string, string];
 
@@ -321,10 +322,10 @@ export async function redeemRecovery(input: {
       verifierMatches('recovery', normalizeRecoveryCode(secret), grant.verifier, grantId);
     if (!grant || !valid) {
       await recordFailure(roomBucket, config.limits.failedJoinPerRoomIp);
-      throw unauthorized('That recovery code is not valid or has already been used.');
+      throw unauthorized(t('server.recoveryUsed'));
     }
     const membership = memberAt(room, grant.seat);
-    if (!membership) throw new AppError('ROOM_UNAVAILABLE', 'That seat is no longer in the room.');
+    if (!membership) throw new AppError('ROOM_UNAVAILABLE', t('server.seatGone'));
     grant.consumedAt = Date.now();
     revokeSessionsFor(room, membership.id);
     const session = issueSession(room, membership.id);

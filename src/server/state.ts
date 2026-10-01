@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { MatchState, Seat } from '../engine';
 import { config } from './config';
 import { AppError } from './errors';
+import { t } from './text';
 
 /**
  * The whole store. Rooms live in this process and nowhere else: a room is
@@ -143,7 +144,7 @@ export function getRoom(roomId: string): Room | undefined {
 
 export function requireRoom(roomId: string): Room {
   const room = rooms.get(roomId);
-  if (!room) throw new AppError('NOT_FOUND', 'That room no longer exists.');
+  if (!room) throw new AppError('NOT_FOUND', t('server.roomNotFound'));
   return room;
 }
 
@@ -155,9 +156,9 @@ export function isExpired(room: Room): boolean {
 /** A room that can still be changed: not closed, not expired, not gone. */
 export function requireLiveRoom(roomId: string): Room {
   const room = requireRoom(roomId);
-  if (room.status === 'closed') throw new AppError('ROOM_UNAVAILABLE', 'This room has been closed.');
+  if (room.status === 'closed') throw new AppError('ROOM_UNAVAILABLE', t('server.roomClosed'));
   if (room.status === 'expired' || isExpired(room)) {
-    throw new AppError('ROOM_UNAVAILABLE', 'This room has expired.');
+    throw new AppError('ROOM_UNAVAILABLE', t('server.roomExpired'));
   }
   return room;
 }
@@ -167,7 +168,7 @@ export function requireLiveRoom(roomId: string): Room {
  * rejected before a lock is created, so probing cannot grow the lock table.
  */
 export async function withRoom<T>(roomId: string, handler: (room: Room) => T | Promise<T>): Promise<T> {
-  if (!rooms.has(roomId)) throw new AppError('NOT_FOUND', 'That room no longer exists.');
+  if (!rooms.has(roomId)) throw new AppError('NOT_FOUND', t('server.roomNotFound'));
   let lock = locks.get(roomId);
   if (!lock) {
     lock = new Mutex();

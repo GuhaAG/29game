@@ -1,8 +1,8 @@
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { join, normalize } from 'node:path';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { PROFILE, RULES_TEXT, RULES_VERSION, type Seat } from '../engine';
+import { PROFILE, RULES_VERSION, type Seat } from '../engine';
 import { handleCommand } from './commands';
 import { config } from './config';
 import { AppError, unauthorized } from './errors';
@@ -32,6 +32,7 @@ import {
 } from './rooms';
 import { buildSnapshot } from './snapshot';
 import { activeRoomCount, clearAll, getRoom } from './state';
+import { locale, t, textTree } from './text';
 
 /** Resolves whether the server runs from dist/src/server or from src/server. */
 function resolvePublicDir(): string {
@@ -63,6 +64,10 @@ const SECURITY_HEADERS: Record<string, string> = {
     "connect-src 'self' ws: wss:; form-action 'none'; frame-ancestors 'none'; base-uri 'none'",
 };
 
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function serveStatic(res: ServerResponse, relativePath: string): void {
   const safe = normalize(relativePath).replace(/^(\.\.[/\\])+/, '');
   const filePath = join(PUBLIC_DIR, safe);
@@ -72,6 +77,19 @@ function serveStatic(res: ServerResponse, relativePath: string): void {
     return;
   }
   const extension = filePath.slice(filePath.lastIndexOf('.'));
+  if (extension === '.html') {
+    // Page text is written as {{key}} in the HTML and filled in from locales/.
+    const page = readFileSync(filePath, 'utf8').replace(/\{\{([\w.]+)\}\}/g, (_whole, key: string) =>
+      escapeHtml(key === 'locale' ? locale : t(key)),
+    );
+    res.writeHead(200, {
+      'content-type': CONTENT_TYPES[extension] as string,
+      'cache-control': 'no-store',
+      ...SECURITY_HEADERS,
+    });
+    res.end(page);
+    return;
+  }
   res.writeHead(200, {
     'content-type': CONTENT_TYPES[extension] ?? 'application/octet-stream',
     'cache-control': extension === '.html' ? 'no-store' : 'no-cache',
@@ -92,7 +110,7 @@ function requireCsrf(req: IncomingMessage, roomId: string, cookies: Record<strin
   const token = Array.isArray(header) ? header[0] : header;
   const context = authenticate(roomId, cookie);
   if (!token || token !== context.session.csrfToken) {
-    throw unauthorized('That request could not be verified. Reload the page and try again.');
+    throw unauthorized(t('server.csrf'));
   }
 }
 
@@ -102,7 +120,13 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
   const ip = clientIp(req);
 
   if (url.pathname === '/api/rules' && method === 'GET') {
-    sendJson(res, 200, { rulesVersion: RULES_VERSION, profile: PROFILE, sections: RULES_TEXT });
+    const sections = (textTree().rules as { sections?: unknown } | undefined)?.sections ?? [];
+    sendJson(res, 200, { rulesVersion: RULES_VERSION, profile: PROFILE, sections });
+    return;
+  }
+
+  if (url.pathname === '/api/text' && method === 'GET') {
+    sendJson(res, 200, { locale, strings: textTree() }, { 'cache-control': 'no-store' });
     return;
   }
 
@@ -134,7 +158,7 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
 
   const roomId = roomIdFrom(url.pathname);
   if (!roomId) {
-    sendJson(res, 404, { error: { code: 'NOT_FOUND', message: 'Not found.' } });
+    sendJson(res, 404, { error: { code: 'NOT_FOUND', message: t('server.notFound') } });
     return;
   }
   const action = url.pathname.slice(`/api/rooms/${roomId}`.length);
@@ -196,7 +220,7 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
     return;
   }
 
-  sendJson(res, 404, { error: { code: 'NOT_FOUND', message: 'Not found.' } });
+  sendJson(res, 404, { error: { code: 'NOT_FOUND', message: t('server.notFound') } });
 }
 
 async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -316,7 +340,7 @@ async function handleSocketMessage(
   try {
     message = JSON.parse(raw) as typeof message;
   } catch {
-    ws.send(JSON.stringify({ type: 'error', code: 'INVALID', message: 'Malformed request.' }));
+    ws.send(JSON.stringify({ type: 'error', code: 'INVALID', message: t('server.malformed') }));
     return;
   }
   const connection = hub.connectionsIn(roomId).find((entry) => entry.id === connectionId);
@@ -331,7 +355,7 @@ async function handleSocketMessage(
   }
 
   if (message.type !== 'command') {
-    ws.send(JSON.stringify({ type: 'error', code: 'INVALID', message: 'Unknown request.' }));
+    ws.send(JSON.stringify({ type: 'error', code: 'INVALID', message: t('server.unknownRequest') }));
     return;
   }
 
@@ -341,7 +365,7 @@ async function handleSocketMessage(
         type: 'error',
         commandId: message.commandId,
         code: 'RATE_LIMITED',
-        message: 'Slow down for a moment and try again.',
+        message: t('server.slowDown'),
       }),
     );
     return;
@@ -373,7 +397,7 @@ async function handleSocketMessage(
         lastSeq: outcome.events.at(-1)?.seq,
       });
       if (outcome.room.status === 'closed') {
-        hub.closeRoomConnections(roomId, 'closed', 'This room has been closed.');
+        hub.closeRoomConnections(roomId, 'closed', t('server.roomClosed'));
       }
     }
   } catch (error) {

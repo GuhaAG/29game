@@ -1,3 +1,4 @@
+import { t } from './text';
 export type ErrorCode =
   | 'UNAUTHORIZED'
   | 'ROOM_UNAVAILABLE'
@@ -44,7 +45,7 @@ export class AppError extends Error {
   }
 }
 
-export function unauthorized(message = 'That access is invalid or has expired.'): AppError {
+export function unauthorized(message = t('server.accessInvalid')): AppError {
   return new AppError('UNAUTHORIZED', message);
 }
 

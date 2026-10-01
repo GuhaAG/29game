@@ -1,5 +1,6 @@
 import { config, type RateLimitRule } from './config';
 import { AppError } from './errors';
+import { t } from './text';
 
 interface Window {
   start: number;
@@ -32,7 +33,7 @@ export async function enforce(bucket: string, rule: RateLimitRule): Promise<void
   if (!outcome.allowed) {
     throw new AppError(
       'RATE_LIMITED',
-      'Too many attempts. Please wait a moment and try again.',
+      t('server.tooManyAttempts'),
       outcome.retryAfterMs,
     );
   }
@@ -47,7 +48,7 @@ export async function checkOnly(bucket: string, rule: RateLimitRule): Promise<vo
   if (window.count >= rule.limit) {
     throw new AppError(
       'RATE_LIMITED',
-      'Too many attempts. Please wait a moment and try again.',
+      t('server.tooManyAttempts'),
       Math.max(1_000, rule.windowMs - elapsed),
     );
   }

@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { before, describe, it } from 'node:test';
 import { JSDOM } from 'jsdom';
 
@@ -17,7 +19,11 @@ const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></h
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const views = require('../../src/client/views') as typeof import('../../src/client/views');
+const text = require('../../src/client/text') as typeof import('../../src/client/text');
 /* eslint-enable @typescript-eslint/no-var-requires */
+
+// The words come from locales/en.json, exactly as the server serves them.
+text.setText(JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'locales', 'en.json'), 'utf8')));
 
 const noopActions = new Proxy({}, { get: () => () => undefined }) as import('../../src/client/views').Actions;
 

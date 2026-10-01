@@ -12,6 +12,7 @@ import {
   revokeAllSessions,
   revokeOutstandingGrants,
 } from './state';
+import { t } from './text';
 
 /** Administrative role only: the engine never depends on who the host is. */
 function transferAbsentHost(room: Room): void {
@@ -44,7 +45,7 @@ function warnExpiring(room: Room): void {
     hub.send(connection, {
       type: 'notice',
       level: 'warning',
-      message: 'This room will close soon if nobody acts.',
+      message: t('server.expiringSoon'),
       expiresAt: new Date(room.expiresAt).toISOString(),
     });
   }
@@ -66,7 +67,7 @@ function expire(room: Room): void {
   hub.closeRoomConnections(
     room.id,
     'expired',
-    'This room has expired. Create a new room to play again.',
+    t('server.roomExpiredCreateNew'),
   );
   log.info('room expired', { room: pseudonym(room.id) });
 }
@@ -74,7 +75,7 @@ function expire(room: Room): void {
 function purge(room: Room): boolean {
   if (room.purgeAfter === null || room.purgeAfter > Date.now()) return false;
   if (hub.connectionsIn(room.id).length > 0) {
-    hub.closeRoomConnections(room.id, 'closed', 'This room is no longer available.');
+    hub.closeRoomConnections(room.id, 'closed', t('server.roomUnavailable'));
   }
   deleteRoom(room.id);
   return true;

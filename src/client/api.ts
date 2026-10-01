@@ -1,3 +1,5 @@
+import { t } from './text';
+
 export interface ApiError {
   code: string;
   message: string;
@@ -29,7 +31,7 @@ async function request<T>(
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });
   } catch {
-    throw new RequestFailed({ code: 'OFFLINE', message: 'No connection to the server. Check your network.' });
+    throw new RequestFailed({ code: 'OFFLINE', message: t('app.offline') });
   }
   const text = await response.text();
   const parsed = text ? (JSON.parse(text) as Record<string, unknown>) : {};
@@ -37,7 +39,7 @@ async function request<T>(
     const error = (parsed.error ?? {}) as Partial<ApiError>;
     throw new RequestFailed({
       code: error.code ?? 'SERVER_ERROR',
-      message: error.message ?? 'Something went wrong. Please try again.',
+      message: error.message ?? t('app.genericError'),
     });
   }
   return parsed as T;

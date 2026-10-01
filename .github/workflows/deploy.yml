@@ -72,7 +72,7 @@ jobs:
           USER: ${{ secrets.DEPLOY_USER || 'deploy' }}
         run: |
           rsync -az --delete -e "ssh -i ~/.ssh/deploy_key -o BatchMode=yes" \
-            dist public package.json package-lock.json "$USER@$HOST:/srv/twentynine/"
+            dist public locales package.json package-lock.json "$USER@$HOST:/srv/twentynine/"
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$USER@$HOST" \
             'cd /srv/twentynine && npm ci --omit=dev --silent && sudo systemctl restart twentynine'
 

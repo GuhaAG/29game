@@ -1,3 +1,5 @@
+import { t } from './text';
+
 /** Screen-name rules from SPEC.md section 3: 1-24 visible characters, no control
  *  or bidirectional-override characters, unique per room case-insensitively. */
 
@@ -26,18 +28,18 @@ export interface NameCheck {
 /** Normalizes and validates a screen name, returning the comparison key too. */
 export function checkDisplayName(input: unknown): NameCheck {
   if (typeof input !== 'string') {
-    return { ok: false, name: '', key: '', reason: 'Enter a screen name.' };
+    return { ok: false, name: '', key: '', reason: t('server.nameEmpty') };
   }
   const name = input.normalize('NFC').trim().replace(/\s+/gu, ' ');
   if (name.length === 0) {
-    return { ok: false, name, key: '', reason: 'Enter a screen name.' };
+    return { ok: false, name, key: '', reason: t('server.nameEmpty') };
   }
   if (FORBIDDEN.test(name)) {
-    return { ok: false, name, key: '', reason: 'That name contains characters that are not allowed.' };
+    return { ok: false, name, key: '', reason: t('server.nameBadChars') };
   }
   const length = visibleLength(name);
   if (length > MAX_NAME_LENGTH) {
-    return { ok: false, name, key: '', reason: `Use at most ${MAX_NAME_LENGTH} characters.` };
+    return { ok: false, name, key: '', reason: t('server.nameTooLong', { max: MAX_NAME_LENGTH }) };
   }
   return { ok: true, name, key: name.normalize('NFKC').toLowerCase() };
 }

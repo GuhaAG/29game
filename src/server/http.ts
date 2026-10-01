@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { config } from './config';
 import { AppError } from './errors';
+import { t } from './text';
 
 const MAX_BODY_BYTES = 16 * 1024;
 
@@ -32,19 +33,19 @@ export async function readJson(req: IncomingMessage): Promise<Record<string, unk
   for await (const chunk of req) {
     const buffer = chunk as Buffer;
     size += buffer.length;
-    if (size > MAX_BODY_BYTES) throw new AppError('INVALID', 'That request was too large.');
+    if (size > MAX_BODY_BYTES) throw new AppError('INVALID', t('server.tooLarge'));
     chunks.push(buffer);
   }
   if (size === 0) return {};
   try {
     const parsed = JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new AppError('INVALID', 'Malformed request.');
+      throw new AppError('INVALID', t('server.malformed'));
     }
     return parsed as Record<string, unknown>;
   } catch (error) {
     if (error instanceof AppError) throw error;
-    throw new AppError('INVALID', 'Malformed request.');
+    throw new AppError('INVALID', t('server.malformed'));
   }
 }
 
@@ -71,9 +72,9 @@ export function originAllowed(req: IncomingMessage): boolean {
 
 export function assertMutationAllowed(req: IncomingMessage): void {
   if (config.requireHttps && !isSecureRequest(req)) {
-    throw new AppError('INVALID', 'A secure connection is required.');
+    throw new AppError('INVALID', t('server.secureRequired'));
   }
-  if (!originAllowed(req)) throw new AppError('UNAUTHORIZED', 'That request came from an unexpected origin.');
+  if (!originAllowed(req)) throw new AppError('UNAUTHORIZED', t('server.badOrigin'));
 }
 
 export function sessionCookieHeader(roomId: string, value: string, maxAgeMs: number): string {
@@ -102,7 +103,7 @@ export function sendJson(res: ServerResponse, status: number, body: unknown, hea
 
 export function toAppError(error: unknown): AppError {
   if (error instanceof AppError) return error;
-  return new AppError('SERVER_ERROR', 'Something went wrong. Please try again.');
+  return new AppError('SERVER_ERROR', t('server.genericError'));
 }
 
 export function sendError(res: ServerResponse, error: unknown): void {
