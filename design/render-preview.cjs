@@ -1,0 +1,21 @@
+// Render the actual views with the existing client-test fixture for local review.
+const fs = require('node:fs');
+const { JSDOM } = require('jsdom');
+const dom = new JSDOM('', { url: 'http://localhost/room/preview' });
+for (const key of ['document', 'Node', 'location']) global[key] = dom.window[key];
+const views = require('../dist/src/client/views');
+const text = require('../dist/src/client/text');
+text.setText(JSON.parse(fs.readFileSync('locales/en.json', 'utf8')));
+const tests = fs.readFileSync('dist/test/client/views.test.js', 'utf8');
+const helpers = tests.slice(tests.indexOf('function baseState()'), tests.indexOf('(0, node_test_1.describe)'));
+const fixtures = new Function(helpers + '\nreturn {baseState, snapshotFixture};')();
+const actions = new Proxy({}, { get: () => () => {} });
+const state = fixtures.baseState();
+const home = views.homeView(state, actions).outerHTML;
+state.snapshot = fixtures.snapshotFixture();
+state.selectedCard = 'SJ';
+const table = views.roomView(state, actions).outerHTML;
+const css = fs.readFileSync('public/styles.css', 'utf8');
+const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>29 · The Card Club</title><style>${css}\n.review-bar{padding:12px 24px;background:#263b31;color:#fff;font:13px system-ui;display:flex;justify-content:center;gap:16px;align-items:center}.review-bar button{min-height:44px;background:#fffdf3;color:#263b31} [hidden]{display:none!important}</style><div class="review-bar"><span>Applied design · Sample game</span><button onclick="show('home')">Home</button><button onclick="show('table')">Game table</button></div><div id="home">${home}</div><div id="table" hidden>${table}</div><script>function show(id){document.getElementById('home').hidden=id!=='home';document.getElementById('table').hidden=id!=='table'}document.querySelector('.home-create').onclick=()=>show('table');document.querySelectorAll('form').forEach(f=>f.onsubmit=e=>{e.preventDefault();show('table')});document.querySelectorAll('.club-brand').forEach(a=>a.onclick=e=>{e.preventDefault();show('home')})</script></html>`;
+fs.writeFileSync('design/applied.html', html);
+console.log('Actual home and table views rendered to design/applied.html');

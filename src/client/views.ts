@@ -154,7 +154,7 @@ export function homeView(state: UiState, actions: Actions): HTMLElement {
             h('label', { for: 'room' }, t('home.joinLabel')),
             h('div', { class: 'join-row' },
               h('input', { id: 'room', name: 'room', type: 'text', placeholder: t('home.joinPlaceholder'), 'data-focus': 'room', autocomplete: 'off' }),
-              h('button', { type: 'submit' }, t('home.joinButton')),
+              h('button', { type: 'submit', class: 'primary' }, t('home.joinButton')),
             ),
           ),
         ),
