@@ -87,9 +87,9 @@
     "reservedTrump": " Trump will be {suit}."
   },
   "home": {
-    "eyebrow": "Play the 29 game.",
-    "headlineLine1": "Private table.",
-    "headlineLine2": "Private game.",
+    "eyebrow": "Just for friends",
+    "headlineLine1": "29",
+    "headlineLine2": "Play the game.",
     "lede": "",
     "hint": "A private table for exactly four people. No accounts, no downloads.",
     "createButton": "Create game",
