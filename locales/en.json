@@ -1,7 +1,7 @@
 {
   "_readme": "Every piece of player-facing text lives in this file. Edit the values (the right-hand side) in any editor, save, and reload the page; no rebuild is needed. {name} style words are filled in by the app, so keep them exactly as written, but you may move them around. To add a language, copy this file to locales/<code>.json (e.g. fr.json), translate it, and start the server with LOCALE=<code>. Anything missing from a translation falls back to this English file.",
   "app": {
-    "title": "29 — private four-player card game",
+    "title": "29 - private four-player card game",
     "skipLink": "Skip to main content",
     "loading": "Loading…",
     "loadingTable": "Loading the table…",
@@ -15,8 +15,8 @@
     "private": "Private game"
   },
   "footer": {
-    "left": "This game is vibecoded, no data is asked or stored. If you don't like AI, I respect that but this is not for you",
-    "right": "©https://www.arghyaguha.com/"
+    "left": "This game is vibecoded. No personal or identifiable data is collected or stored. If you don't like AI, I respect that but this is not for you",
+    "right": "©2026 www.arghyaguha.com"
   },
   "common": {
     "dismiss": "Dismiss",
