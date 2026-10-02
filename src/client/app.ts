@@ -4,6 +4,7 @@ import { RequestFailed, api } from './api';
 import { alertNow, announce, mount } from './dom';
 import { RoomSocket, type ServerMessage, type SocketStatus } from './socket';
 import { loadText, t } from './text';
+import { initializeTheme } from './theme';
 import {
   type Actions,
   type UiState,
@@ -15,6 +16,8 @@ import {
   recoverView,
   roomView,
 } from './views';
+
+initializeTheme();
 
 const state: UiState = {
   view: 'home',

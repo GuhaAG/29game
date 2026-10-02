@@ -2,6 +2,7 @@ import { SUITS, rankOf, suitOf, type CardId, type Suit } from '../engine';
 import type { Snapshot } from '../shared/wire';
 import { h, fragment } from './dom';
 import { rulesSections, t } from './text';
+import { themeToggle } from './theme';
 
 export interface Actions {
   navigate(path: string): void;
@@ -36,7 +37,9 @@ function clubHeader(): HTMLElement {
   return h('header', { class: 'club-header' },
     h('a', { class: 'club-brand', href: '/', 'aria-label': t('header.homeLabel') }, t('app.brand'),
       h('span', {}, t('header.tagline'))),
-    h('span', { class: 'club-private' }, t('header.private')),
+    h('div', { class: 'header-controls' },
+      h('span', { class: 'club-private' }, t('header.private')),
+      themeToggle()),
   );
 }
 
