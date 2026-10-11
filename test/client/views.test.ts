@@ -87,7 +87,7 @@ function snapshotFixture(overrides: Record<string, unknown> = {}): any {
         trumpStatus: 'hidden',
         trump: 'S',
         revealedBy: null,
-        auction: { turn: 0, highBid: 18, highBidder: 0, history: [{ seat: 0, action: 'bid', value: 18 }] },
+        auction: { turn: 0, highBid: 18, highBidder: 0, stage: 'challenge', history: [{ seat: 0, action: 'bid', value: 18 }] },
         doubling: { actor: null, doubledBy: 1, redoubledBy: null, defenderDecisions: [], bidderDecisions: [] },
         turn: 0,
         currentTrick: { index: 0, leader: 0, plays: [] },
@@ -104,6 +104,7 @@ function snapshotFixture(overrides: Record<string, unknown> = {}): any {
       actions: {
         bids: [],
         canPass: false,
+        canHold: false,
         canChooseTrump: false,
         canDouble: false,
         canRedouble: false,

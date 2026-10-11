@@ -53,6 +53,7 @@ const root = document.getElementById('app') as HTMLElement;
  */
 const TURN_COMMANDS = new Set([
   'bid',
+  'hold',
   'pass',
   'chooseTrump',
   'double',
@@ -102,6 +103,8 @@ function describeEvent(event: { type: string; actorSeat: number | null; payload:
   switch (event.type) {
     case 'game.bidPlaced':
       return t(payload.forced ? 'events.bidPlacedForced' : 'events.bidPlaced', { player: player(), value: String(payload.value) });
+    case 'game.held':
+      return t('events.held', { player: player(), value: String(payload.value) });
     case 'game.passed':
       return t('events.passed', { player: player() });
     case 'game.auctionWon':

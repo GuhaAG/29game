@@ -723,7 +723,7 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
 
   switch (match.phase) {
     case 'BIDDING': {
-      if (available.bids.length === 0) {
+      if (available.bids.length === 0 && !available.canHold) {
         return h(
           'div',
           { class: 'card-panel', role: 'status' },
@@ -735,7 +735,17 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
       return h(
         'div',
         { class: 'card-panel' },
-        h('h2', {}, t('actions.auction.yourBid')),
+        h('h2', {}, t(available.canHold ? 'actions.auction.yourResponse' : 'actions.auction.yourBid')),
+        available.canHold
+          ? h(
+              'p',
+              {},
+              t('actions.auction.holdPrompt', {
+                player: snapshot.seats[hand?.auction.highBidder ?? 0]?.name ?? t('actions.auction.nextPlayer'),
+                value: hand?.auction.highBid ?? 0,
+              }),
+            )
+          : null,
         h(
           'div',
           { class: 'bid-grid', role: 'group', 'aria-label': t('actions.auction.bidsLabel') },
@@ -755,16 +765,22 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
         h(
           'div',
           { class: 'button-row' },
-          h(
-            'button',
-            {
-              class: 'primary',
-              disabled: state.selectedBid === null,
-              'data-focus': 'bid-confirm',
-              onClick: () => actions.send('bid', { value: state.selectedBid }),
-            },
-            state.selectedBid === null ? t('actions.auction.bid') : t('actions.auction.bidValue', { value: state.selectedBid }),
-          ),
+          available.canHold
+            ? h(
+                'button',
+                { class: 'primary', 'data-focus': 'hold', onClick: () => actions.send('hold') },
+                t('actions.auction.hold', { value: hand?.auction.highBid ?? 0 }),
+              )
+            : h(
+                'button',
+                {
+                  class: 'primary',
+                  disabled: state.selectedBid === null,
+                  'data-focus': 'bid-confirm',
+                  onClick: () => actions.send('bid', { value: state.selectedBid }),
+                },
+                state.selectedBid === null ? t('actions.auction.bid') : t('actions.auction.bidValue', { value: state.selectedBid }),
+              ),
           h('button', { 'data-focus': 'pass', onClick: () => actions.send('pass') }, t('common.pass')),
         ),
         auctionHistory(snapshot),
@@ -961,6 +977,11 @@ function auctionHistory(snapshot: Snapshot): HTMLElement {
         {},
         entry.action === 'pass'
           ? t('actions.auction.entryPassed', { player: snapshot.seats[entry.seat]?.name ?? seatLabel(entry.seat) })
+          : entry.action === 'hold'
+          ? t('actions.auction.entryHeld', {
+              player: snapshot.seats[entry.seat]?.name ?? seatLabel(entry.seat),
+              value: entry.value as number,
+            })
           : t(entry.forced ? 'actions.auction.entryBidForced' : 'actions.auction.entryBid', {
               player: snapshot.seats[entry.seat]?.name ?? seatLabel(entry.seat),
               value: entry.value as number,

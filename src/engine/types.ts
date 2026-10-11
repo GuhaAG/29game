@@ -45,17 +45,28 @@ export interface CurrentTrick {
 
 export interface AuctionRecord {
   seat: Seat;
-  action: 'bid' | 'pass';
+  action: 'bid' | 'hold' | 'pass';
   value?: number;
   /** Set when the dealer was forced to 16 by three opening passes. */
   forced?: boolean;
 }
 
+export type AuctionStage = 'open' | 'challenge' | 'respond' | 'raise';
+
 export interface AuctionState {
   turn: Seat;
   highBid: number | null;
   highBidder: Seat | null;
-  consecutivePasses: number;
+  /**
+   * open: nobody has bid yet. challenge: `turn` must raise or pass against the
+   * high bid. respond: `turn` (the defender) must hold or pass against a raise.
+   * raise: the defender held, so the high bidder must raise or pass.
+   */
+  stage: AuctionStage;
+  /** The seat the current raise is being answered by; set during a duel. */
+  defender: Seat | null;
+  /** The seat most recently brought into the auction, in clockwise order. */
+  cursor: Seat;
   /** Seats that have passed and can no longer re-enter the current auction. */
   passed: Seat[];
   history: AuctionRecord[];
@@ -150,6 +161,7 @@ export interface MatchState {
 
 export type EngineCommand =
   | { type: 'bid'; seat: Seat; value: number }
+  | { type: 'hold'; seat: Seat }
   | { type: 'pass'; seat: Seat }
   | { type: 'chooseTrump'; seat: Seat; mode: TrumpMode; suit?: Suit }
   | { type: 'double'; seat: Seat }
@@ -169,6 +181,7 @@ export type EngineEvent =
   | { type: 'handStarted'; handNumber: number; dealer: Seat }
   | { type: 'dealtFirst' }
   | { type: 'bidPlaced'; seat: Seat; value: number; forced?: boolean }
+  | { type: 'held'; seat: Seat; value: number }
   | { type: 'passed'; seat: Seat }
   | { type: 'auctionWon'; seat: Seat; value: number }
   | { type: 'trumpChosen'; seat: Seat; mode: TrumpMode }

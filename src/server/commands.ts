@@ -71,6 +71,7 @@ const LOBBY_COMMANDS = new Set([
 
 const ENGINE_COMMANDS = new Set([
   'bid',
+  'hold',
   'pass',
   'chooseTrump',
   'double',
@@ -126,6 +127,7 @@ function toEngineCommand(type: string, payload: Record<string, unknown>, seat: S
       if (typeof card !== 'string') throw new AppError('INVALID', t('server.chooseCard'));
       return { type: 'playCard', seat, card };
     }
+    case 'hold':
     case 'pass':
     case 'double':
     case 'passDouble':
