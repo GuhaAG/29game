@@ -68,6 +68,41 @@ describe('auction', () => {
     assert.equal(state.hand?.auction.highBid, 17);
   });
 
+  it('ends once every other seat has passed after a bid', () => {
+    const state = applyAll(fresh(), [
+      { type: 'pass', seat: 0 },
+      { type: 'bid', seat: 1, value: 16 },
+      { type: 'pass', seat: 2 },
+      { type: 'pass', seat: 3 },
+    ]);
+    assert.equal(state.phase, 'CHOOSE_TRUMP');
+    assert.equal(state.hand?.bidder, 1);
+    assert.equal(state.hand?.bid, 16);
+  });
+
+  it('ends when the last challenger passes against a late raise', () => {
+    const state = applyAll(fresh(), [
+      { type: 'pass', seat: 0 },
+      { type: 'bid', seat: 1, value: 16 },
+      { type: 'pass', seat: 2 },
+      { type: 'bid', seat: 3, value: 17 },
+      { type: 'pass', seat: 1 },
+    ]);
+    assert.equal(state.phase, 'CHOOSE_TRUMP');
+    assert.equal(state.hand?.bidder, 3);
+    assert.equal(state.hand?.bid, 17);
+  });
+
+  it('forces the dealer to 16 after three opening passes', () => {
+    const state = applyAll(fresh(), [
+      { type: 'pass', seat: 0 },
+      { type: 'pass', seat: 1 },
+      { type: 'pass', seat: 2 },
+    ]);
+    assert.equal(state.hand?.bidder, 3);
+    assert.equal(state.hand?.bid, 16);
+  });
+
   it('ends immediately at the maximum bid', () => {
     const state = apply(fresh(), { type: 'bid', seat: 0, value: 28 });
     assert.equal(state.phase, 'CHOOSE_TRUMP');

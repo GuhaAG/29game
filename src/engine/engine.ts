@@ -353,11 +353,12 @@ export function applyCommand(state: MatchState, command: EngineCommand): ApplyRe
       hand.auction.consecutivePasses = 0;
       hand.auction.history.push({ seat, action: 'bid', value: command.value });
       events.push({ type: 'bidPlaced', seat, value: command.value });
-      if (command.value === PROFILE.maxBid) {
+      const challenger = nextAuctionChallenger(hand, seat);
+      if (command.value === PROFILE.maxBid || challenger === null) {
         endAuction(next, hand, events);
       } else {
-        hand.auction.turn = nextAuctionChallenger(hand, seat) ?? seat;
-        hand.turn = hand.auction.turn;
+        hand.auction.turn = challenger;
+        hand.turn = challenger;
       }
       break;
     }
@@ -379,12 +380,14 @@ export function applyCommand(state: MatchState, command: EngineCommand): ApplyRe
         });
         events.push({ type: 'bidPlaced', seat: hand.dealer, value: PROFILE.forcedDealerBid, forced: true });
         endAuction(next, hand, events);
-      } else if (hand.auction.highBid !== null && hand.auction.consecutivePasses === 3) {
-        endAuction(next, hand, events);
       } else {
-        const nextSeatTurn = nextAuctionChallenger(hand, seat);
-        hand.auction.turn = nextSeatTurn ?? hand.auction.highBidder ?? seat;
-        hand.turn = hand.auction.turn;
+        const challenger = nextAuctionChallenger(hand, seat);
+        if (challenger === null) {
+          endAuction(next, hand, events);
+        } else {
+          hand.auction.turn = challenger;
+          hand.turn = challenger;
+        }
       }
       break;
     }
