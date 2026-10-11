@@ -654,7 +654,8 @@ function seatBox(snapshot: Snapshot, seat: number, position: string): HTMLElemen
 
 function trickArea(snapshot: Snapshot): HTMLElement {
   const hand = snapshot.match?.hand;
-  const plays = hand?.currentTrick.plays ?? [];
+  const completed = hand?.ack ? hand.tricks[hand.ack.trickIndex] : null;
+  const plays = completed?.plays ?? hand?.currentTrick.plays ?? [];
   return h(
     'div',
     { class: 'trick', 'aria-label': t('table.trickLabel') },
