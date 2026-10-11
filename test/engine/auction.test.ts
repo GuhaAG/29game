@@ -42,7 +42,7 @@ describe('auction', () => {
     assert.ok(state.hand?.auction.history.some((entry) => entry.forced));
   });
 
-  it('ends after three consecutive passes following a bid', () => {
+  it('ends after every other seat passes following a bid', () => {
     const state = applyAll(fresh(), [
       { type: 'bid', seat: 0, value: 18 },
       { type: 'pass', seat: 1 },
@@ -91,16 +91,6 @@ describe('auction', () => {
     assert.equal(state.phase, 'CHOOSE_TRUMP');
     assert.equal(state.hand?.bidder, 3);
     assert.equal(state.hand?.bid, 17);
-  });
-
-  it('forces the dealer to 16 after three opening passes', () => {
-    const state = applyAll(fresh(), [
-      { type: 'pass', seat: 0 },
-      { type: 'pass', seat: 1 },
-      { type: 'pass', seat: 2 },
-    ]);
-    assert.equal(state.hand?.bidder, 3);
-    assert.equal(state.hand?.bid, 16);
   });
 
   it('ends immediately at the maximum bid', () => {

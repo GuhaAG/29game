@@ -379,8 +379,8 @@
           "Four cards are dealt to each player, then bidding runs clockwise from the dealer’s left.",
           "Bids are whole numbers from 16 to 28 and each new bid must beat the previous one.",
           "If the first three players pass, the dealer is forced to take the contract at 16.",
-          "Otherwise the auction ends after three consecutive passes. A bid of 28 ends it immediately.",
-          "Passing never removes you from the auction; you may bid again on a later turn."
+          "Otherwise the auction ends once every other player has passed. A bid of 28 ends it immediately.",
+          "Once you pass, you are out of the rest of that auction and cannot bid again."
         ]
       },
       {
