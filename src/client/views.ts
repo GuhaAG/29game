@@ -723,6 +723,9 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
 
   switch (match.phase) {
     case 'BIDDING': {
+      // A selection made before the floor moved (e.g. after a hold) is no longer legal.
+      const selectedBid =
+        state.selectedBid !== null && available.bids.includes(state.selectedBid) ? state.selectedBid : null;
       if (available.bids.length === 0 && !available.canHold) {
         return h(
           'div',
@@ -754,7 +757,7 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
               'button',
               {
                 type: 'button',
-                'aria-pressed': state.selectedBid === value ? 'true' : 'false',
+                'aria-pressed': selectedBid === value ? 'true' : 'false',
                 'data-focus': `bid-${value}`,
                 onClick: () => actions.selectBid(value),
               },
@@ -775,11 +778,11 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
                 'button',
                 {
                   class: 'primary',
-                  disabled: state.selectedBid === null,
+                  disabled: selectedBid === null,
                   'data-focus': 'bid-confirm',
-                  onClick: () => actions.send('bid', { value: state.selectedBid }),
+                  onClick: () => actions.send('bid', { value: selectedBid }),
                 },
-                state.selectedBid === null ? t('actions.auction.bid') : t('actions.auction.bidValue', { value: state.selectedBid }),
+                selectedBid === null ? t('actions.auction.bid') : t('actions.auction.bidValue', { value: selectedBid }),
               ),
           h('button', { 'data-focus': 'pass', onClick: () => actions.send('pass') }, t('common.pass')),
         ),
