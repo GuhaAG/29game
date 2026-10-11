@@ -35,7 +35,7 @@ Trump reveal is optional only when unable to follow suit. The revealer must trum
 | R2 | Optional reveal when unable to follow suit; revealer must trump if able, subject to following suit after seventh-card release |
 | R3 | Include marriage/pair, seventh-card trump, and double/redouble |
 
-The user confirmed these choices in chat. The timing and edge cases in section 5 are the specified implementation of those choices. No-trump, reverse, single-hand, special redeals, automatic doubling, “set,” and extra loss penalties remain excluded. Freeze this profile as `rulesVersion=1`; record it on every match. V1 implements this profile, not a runtime rule-customization system.
+The user confirmed these choices in chat. The timing and edge cases in section 5 are the specified implementation of those choices. No-trump, reverse, single-hand, special redeals, automatic doubling, “set,” and extra loss penalties remain excluded. Freeze this profile as `rulesVersion=1`; record it on every match. The auction rule that a seat which has passed stays out of the rest of that auction is part of the v1 profile, which had not shipped when it was adopted. V1 implements this profile, not a runtime rule-customization system.
 
 ## 3. Room creation and joining
 
