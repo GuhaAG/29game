@@ -234,6 +234,37 @@ describe('client screens', () => {
     assert.equal(element.querySelector('button[data-focus="declare"]'), null);
   });
 
+  it('keeps the completed trick on the table until the ack window closes', () => {
+    const state = baseState();
+    const snapshot = snapshotFixture();
+    snapshot.match.hand.ack = { trickIndex: 0, acknowledged: [] };
+    snapshot.match.hand.tricks = [
+      {
+        index: 0,
+        leader: 0,
+        plays: [
+          { seat: 0, card: 'SJ' },
+          { seat: 1, card: 'HA' },
+          { seat: 2, card: 'S9' },
+          { seat: 3, card: 'HT' },
+        ],
+        winner: 0,
+        points: 5,
+        trumpLive: true,
+      },
+    ];
+    snapshot.match.hand.currentTrick = { index: 1, leader: 0, plays: [] };
+    snapshot.match.actions.legalCards = [];
+    snapshot.match.actions.canContinueTrick = true;
+    state.snapshot = snapshot;
+    const during = views.roomView(state, noopActions);
+    assert.equal(during.querySelectorAll('.trick .card').length, 4, 'all four played cards stay visible');
+
+    snapshot.match.hand.ack = null;
+    const after = views.roomView(state, noopActions);
+    assert.equal(after.querySelectorAll('.trick .card').length, 0, 'the trick clears once ack is done');
+  });
+
   it('explains an annulled hand in the result panel', () => {
     const state = baseState();
     const snapshot = snapshotFixture();
