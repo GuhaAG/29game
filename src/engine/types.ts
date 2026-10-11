@@ -56,6 +56,8 @@ export interface AuctionState {
   highBid: number | null;
   highBidder: Seat | null;
   consecutivePasses: number;
+  /** Seats that have passed and can no longer re-enter the current auction. */
+  passed: Seat[];
   history: AuctionRecord[];
 }
 

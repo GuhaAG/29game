@@ -54,23 +54,18 @@ describe('auction', () => {
     assert.equal(state.hand?.bid, 18);
   });
 
-  it('lets a player who passed bid again later; a raise resets the pass count', () => {
-    let state = applyAll(fresh(), [
+  it('keeps passed seats out of the rest of the auction', () => {
+    const state = applyAll(fresh(), [
       { type: 'pass', seat: 0 },
       { type: 'bid', seat: 1, value: 16 },
       { type: 'pass', seat: 2 },
-      { type: 'pass', seat: 3 },
-      { type: 'bid', seat: 0, value: 17 },
+      { type: 'bid', seat: 3, value: 17 },
     ]);
-    assert.equal(state.phase, 'BIDDING');
-    assert.equal(state.hand?.auction.consecutivePasses, 0);
-    state = applyAll(state, [
-      { type: 'pass', seat: 1 },
-      { type: 'pass', seat: 2 },
-      { type: 'pass', seat: 3 },
-    ]);
-    assert.equal(state.hand?.bidder, 0);
-    assert.equal(state.hand?.bid, 17);
+
+    assert.deepEqual(state.hand?.auction.passed, [0, 2]);
+    assert.equal(state.hand?.auction.turn, 1);
+    assert.equal(state.hand?.auction.highBidder, 3);
+    assert.equal(state.hand?.auction.highBid, 17);
   });
 
   it('ends immediately at the maximum bid', () => {

@@ -106,6 +106,7 @@ export function startHand(state: MatchState, deck: CardId[], dealer?: Seat): App
       highBid: null,
       highBidder: null,
       consecutivePasses: 0,
+      passed: [],
       history: [],
     },
     bidder: null,
@@ -145,6 +146,15 @@ export function startHand(state: MatchState, deck: CardId[], dealer?: Seat): App
       { type: 'dealtFirst' },
     ],
   };
+}
+
+function nextAuctionChallenger(hand: HandState, afterSeat: Seat): Seat | null {
+  for (let seat = nextSeat(afterSeat); ; seat = nextSeat(seat)) {
+    if (seat === afterSeat) return null;
+    if (seat === hand.auction.highBidder) continue;
+    if (hand.auction.passed.includes(seat)) continue;
+    return seat;
+  }
 }
 
 function endAuction(state: MatchState, hand: HandState, events: EngineEvent[]): void {
@@ -336,6 +346,7 @@ export function applyCommand(state: MatchState, command: EngineCommand): ApplyRe
     case 'bid': {
       if (next.phase !== 'BIDDING' || !hand) fail('WRONG_PHASE', 'bidding is closed');
       if (hand.auction.turn !== seat) fail('NOT_YOUR_TURN', 'not your turn to bid');
+      if (hand.auction.passed.includes(seat)) fail('ILLEGAL_MOVE', 'player has already passed in this auction');
       if (!legalBids(next).includes(command.value)) fail('ILLEGAL_MOVE', 'bid is not legal');
       hand.auction.highBid = command.value;
       hand.auction.highBidder = seat;
@@ -345,7 +356,7 @@ export function applyCommand(state: MatchState, command: EngineCommand): ApplyRe
       if (command.value === PROFILE.maxBid) {
         endAuction(next, hand, events);
       } else {
-        hand.auction.turn = nextSeat(seat);
+        hand.auction.turn = nextAuctionChallenger(hand, seat) ?? seat;
         hand.turn = hand.auction.turn;
       }
       break;
@@ -354,6 +365,7 @@ export function applyCommand(state: MatchState, command: EngineCommand): ApplyRe
       if (next.phase !== 'BIDDING' || !hand) fail('WRONG_PHASE', 'bidding is closed');
       if (hand.auction.turn !== seat) fail('NOT_YOUR_TURN', 'not your turn to bid');
       hand.auction.history.push({ seat, action: 'pass' });
+      hand.auction.passed.push(seat);
       hand.auction.consecutivePasses += 1;
       events.push({ type: 'passed', seat });
       if (hand.auction.highBid === null && hand.auction.consecutivePasses === 3) {
@@ -370,7 +382,8 @@ export function applyCommand(state: MatchState, command: EngineCommand): ApplyRe
       } else if (hand.auction.highBid !== null && hand.auction.consecutivePasses === 3) {
         endAuction(next, hand, events);
       } else {
-        hand.auction.turn = nextSeat(seat);
+        const nextSeatTurn = nextAuctionChallenger(hand, seat);
+        hand.auction.turn = nextSeatTurn ?? hand.auction.highBidder ?? seat;
         hand.turn = hand.auction.turn;
       }
       break;
