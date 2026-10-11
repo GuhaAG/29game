@@ -225,6 +225,10 @@
       "waiting": "Waiting for {name} to bid.",
       "nextPlayer": "the next player",
       "yourBid": "Your bid",
+      "yourResponse": "Your response",
+      "holdPrompt": "{player} raised to {value}. Hold at that bid, or pass.",
+      "hold": "Hold at {value}",
+      "entryHeld": "{player}: held at {value}",
       "bidsLabel": "Available bids",
       "bid": "Bid",
       "bidValue": "Bid {value}",
@@ -335,6 +339,7 @@
   "events": {
     "bidPlaced": "{player} bid {value}.",
     "bidPlacedForced": "{player} bid {value} (forced).",
+    "held": "{player} held at {value}.",
     "passed": "{player} passed.",
     "auctionWon": "{player} holds the contract at {value}.",
     "trumpChosen": "{player} chose trump.",
@@ -379,8 +384,8 @@
           "Four cards are dealt to each player, then bidding runs clockwise from the dealer’s left.",
           "Bids are whole numbers from 16 to 28 and each new bid must beat the previous one.",
           "If the first three players pass, the dealer is forced to take the contract at 16.",
-          "Otherwise the auction ends after three consecutive passes. A bid of 28 ends it immediately.",
-          "Passing never removes you from the auction; you may bid again on a later turn."
+          "Each later player in turn must raise or pass. When someone raises, the player they outbid may hold (match the new bid) or pass; after a hold the raiser raises again or passes. This continues until one of the two passes, then the survivor faces the next player. The auction ends after the dealer has been faced. A bid of 28 ends it immediately.",
+          "Once you pass, you are out of the rest of that auction."
         ]
       },
       {

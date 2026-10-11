@@ -23,7 +23,7 @@ There is no single uniform rule set across these sources. The profile below reco
 
 Four players form opposite-seat teams. Use 32 cards, ranks J, 9, A, 10, K, Q, 8, 7 in descending strength. Jacks score 3, nines 2, aces and tens 1, others zero. Deal four cards each, bid, select secret trump, then deal four more. Follow suit when possible; trick winners lead next. These fundamentals are described by [Arkadium](https://support.arkadium.com/en/support/solutions/articles/44002652194--twenty-nine-how-to-play-tips-scoring).
 
-Confirmed house choices: clockwise; bids 16–28; no last-trick point; three opening passes force dealer to 16. Subsequent three consecutive passes end bidding; passing does not permanently withdraw a player. A bid of 28 ends immediately. Dealer rotates each hand; the player to dealer’s left opens bidding and play.
+Confirmed house choices: clockwise; bids 16–28; no last-trick point; three opening passes force dealer to 16. Bidding is a series of duels. The opener bids or passes; each later seat in clockwise order, ending with the dealer, in turn faces the current high bid and must raise or pass. When a seat raises, the previous high bidder must **hold** (match the raised bid) or pass. After a hold the raiser must raise again or pass, and the two alternate until one passes; the survivor then faces the next seat. A seat that passes is out for the rest of the auction, and every seat gets one turn to challenge, so there is no second lap. The auction ends after the survivor has faced the dealer, or when a bid of 28 is made, which ends it immediately. Dealer rotates each hand; the player to dealer’s left opens bidding and play.
 
 Trump reveal is optional only when unable to follow suit. The revealer must trump if able. Trump applies to the entire current trick, including already-played cards, but never changes completed tricks. Unrevealed trump has no special power. If never revealed, annul the hand. Pair means one player still holds trump K and Q; declare after their team wins a trick on/after reveal. Adjust contract −4 for bidders, +4 for defenders, bounded to 16–28. Bidder team gains/loses the stake (1 normally, 2 doubled, 4 redoubled); other score stays unchanged. Reaching or exceeding +6 wins; reaching or falling below −6 loses. These choices adapt variants documented by [Pagat](https://www.pagat.com/jass/29.html).
 
@@ -35,7 +35,7 @@ Trump reveal is optional only when unable to follow suit. The revealer must trum
 | R2 | Optional reveal when unable to follow suit; revealer must trump if able, subject to following suit after seventh-card release |
 | R3 | Include marriage/pair, seventh-card trump, and double/redouble |
 
-The user confirmed these choices in chat. The timing and edge cases in section 5 are the specified implementation of those choices. No-trump, reverse, single-hand, special redeals, automatic doubling, “set,” and extra loss penalties remain excluded. Freeze this profile as `rulesVersion=1`; record it on every match. V1 implements this profile, not a runtime rule-customization system.
+The user confirmed these choices in chat. The timing and edge cases in section 5 are the specified implementation of those choices. No-trump, reverse, single-hand, special redeals, automatic doubling, “set,” and extra loss penalties remain excluded. Freeze this profile as `rulesVersion=1`; record it on every match. The auction rule that a seat which has passed stays out of the rest of that auction is part of the v1 profile, which had not shipped when it was adopted. V1 implements this profile, not a runtime rule-customization system.
 
 ## 3. Room creation and joining
 
@@ -95,7 +95,7 @@ Security promise: resist unauthorized guessing, seat takeover, and cross-room di
 - Choose the first dealer securely at random; rotate by one seat after every completed or annulled hand.
 - Shuffle all 32 unique card IDs using unbiased Fisher–Yates with cryptographically secure random indices. Persist the resulting hidden deck before dealing; never reshuffle on reconnect.
 - Deal one card at a time in clockwise seat order, starting left of dealer, until each player has four. The remaining cards stay exclusively server-side until the second deal.
-- Bid commands contain an integer target or pass. Server supplies legal choices from the confirmed profile. A raise resets consecutive passes. Auction winner and target are public.
+- Bid commands contain an integer target or pass. Server supplies legal choices from the confirmed profile. A `hold` command lets the outbid seat match a raise. A seat that has passed stays out until the auction closes; the passed list is cleared only when a fresh hand or auction reset begins. The auction ends after the survivor has faced the dealer, or at 28. Auction winner and target are public.
 - The winning bidder chooses a suit privately or selects **Seventh card**, exactly once. The selection mode is public; the chosen suit remains private. Doubling decisions finish before the second deal or any seventh-card preview.
 
 ### Double and redouble
@@ -197,7 +197,7 @@ Illustrative endpoints:
 
 Admission grants are room/password-version bound and expire on rotation, start, or use. Claim rechecks admission, screen-name validity/uniqueness, seat availability, and lobby state in the transaction. Never let a cached roster authorize admission.
 
-Socket command envelope: `{commandId, expectedRevision, type, payload}`. Derive actor and room from the authenticated connection, never from a trusted client-supplied seat. Commands include updateOwnName, moveOwnSeat, ready, start, bid, pass, chooseTrump, double, passDouble, redouble, passRedouble, revealTrump, playCard, declarePair, continueTrick, nextHand, rematch, and authorized lobby/recovery controls.
+Socket command envelope: `{commandId, expectedRevision, type, payload}`. Derive actor and room from the authenticated connection, never from a trusted client-supplied seat. Commands include updateOwnName, moveOwnSeat, ready, start, bid, hold, pass, chooseTrump, double, passDouble, redouble, passRedouble, revealTrump, playCard, declarePair, continueTrick, nextHand, rematch, and authorized lobby/recovery controls.
 
 Every accepted mutation increments a monotonic room revision. Duplicate command IDs return the original result without replaying effects, even if the revision has since changed; reject reuse of an ID with different payload. Stale revisions return `STALE_STATE` and a fresh permitted snapshot. Connection presence updates use a separate presence version so heartbeats do not invalidate gameplay commands.
 
@@ -229,7 +229,7 @@ Projection rules apply before serialization: each player receives only their own
 
 ### Engine verification
 
-Use deterministic fixtures and invariant/property tests for deck uniqueness, card conservation, legal turn order, following suit, auction termination, trump visibility, winner ranking, score totals, annulment, and match boundaries. Cover three opening passes, raises after earlier passes, maximum bid, bidder revealing, revealing with/without trump available, earlier trump cards within the reveal trick, and completed tricks remaining unchanged.
+Use deterministic fixtures and invariant/property tests for deck uniqueness, card conservation, legal turn order, following suit, auction termination, trump visibility, winner ranking, score totals, annulment, and match boundaries. Cover three opening passes, hold-and-raise duels, passed seats staying out, maximum bid, bidder revealing, revealing with/without trump available, earlier trump cards within the reveal trick, and completed tricks remaining unchanged.
 
 Pair tests cover split K/Q across partners, one card already played, wrong-team trick win, reveal timing, skipped declarations, duplicate attempts, and target bounds. In a normal completed hand all 32 cards appear exactly once and total captured card points equal 28 under this profile.
 

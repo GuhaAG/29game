@@ -42,7 +42,7 @@ describe('auction', () => {
     assert.ok(state.hand?.auction.history.some((entry) => entry.forced));
   });
 
-  it('ends after three consecutive passes following a bid', () => {
+  it('ends after every other seat passes following a bid', () => {
     const state = applyAll(fresh(), [
       { type: 'bid', seat: 0, value: 18 },
       { type: 'pass', seat: 1 },
@@ -54,23 +54,112 @@ describe('auction', () => {
     assert.equal(state.hand?.bid, 18);
   });
 
-  it('lets a player who passed bid again later; a raise resets the pass count', () => {
+  it('lets the outbid seat hold, then the raiser must raise or pass', () => {
     let state = applyAll(fresh(), [
+      { type: 'bid', seat: 0, value: 18 },
+      { type: 'bid', seat: 1, value: 19 },
+    ]);
+    assert.equal(state.hand?.auction.turn, 0);
+    assert.deepEqual(projectFor(state, 0).actions.bids, []);
+    assert.equal(projectFor(state, 0).actions.canHold, true);
+    expectRejected(state, { type: 'bid', seat: 0, value: 20 }, 'ILLEGAL_MOVE');
+    expectRejected(state, { type: 'hold', seat: 1 }, 'NOT_YOUR_TURN');
+
+    state = apply(state, { type: 'hold', seat: 0 });
+    assert.equal(state.hand?.auction.turn, 1);
+    assert.equal(state.hand?.auction.highBid, 19);
+    assert.equal(projectFor(state, 1).actions.canHold, false);
+    assert.deepEqual(projectFor(state, 1).actions.bids, [20, 21, 22, 23, 24, 25, 26, 27, 28]);
+    expectRejected(state, { type: 'hold', seat: 1 }, 'ILLEGAL_MOVE');
+
+    state = apply(state, { type: 'bid', seat: 1, value: 20 });
+    assert.equal(state.hand?.auction.turn, 0);
+    assert.equal(state.hand?.auction.passed.length, 0);
+  });
+
+  it('keeps the duel between two seats until one passes, then moves to the next seat', () => {
+    const state = applyAll(fresh(), [
+      { type: 'bid', seat: 0, value: 18 },
+      { type: 'bid', seat: 1, value: 19 },
+      { type: 'hold', seat: 0 },
+      { type: 'bid', seat: 1, value: 20 },
+      { type: 'pass', seat: 0 },
+    ]);
+    assert.deepEqual(state.hand?.auction.passed, [0]);
+    assert.equal(state.hand?.auction.highBidder, 1);
+    assert.equal(state.hand?.auction.highBid, 20);
+    assert.equal(state.hand?.auction.turn, 2);
+    assert.equal(state.hand?.auction.stage, 'challenge');
+    assert.equal(projectFor(state, 2).actions.canHold, false);
+  });
+
+  it('ends after the survivor has faced the last seat', () => {
+    const state = applyAll(fresh(), [
+      { type: 'bid', seat: 0, value: 18 },
+      { type: 'bid', seat: 1, value: 19 },
+      { type: 'hold', seat: 0 },
+      { type: 'bid', seat: 1, value: 20 },
+      { type: 'pass', seat: 0 },
+      { type: 'pass', seat: 2 },
+      { type: 'pass', seat: 3 },
+    ]);
+    assert.equal(state.phase, 'CHOOSE_TRUMP');
+    assert.equal(state.hand?.bidder, 1);
+    assert.equal(state.hand?.bid, 20);
+  });
+
+  it('gives the held bid to the defender when the raiser passes', () => {
+    const state = applyAll(fresh(), [
+      { type: 'bid', seat: 0, value: 18 },
+      { type: 'bid', seat: 1, value: 19 },
+      { type: 'hold', seat: 0 },
+      { type: 'pass', seat: 1 },
+    ]);
+    assert.equal(state.hand?.auction.highBidder, 0);
+    assert.equal(state.hand?.auction.highBid, 19);
+    assert.equal(state.hand?.auction.turn, 2);
+    assert.deepEqual(state.hand?.auction.passed, [1]);
+  });
+
+  it('lets a later challenger duel the survivor and never revisits passed seats', () => {
+    let state = applyAll(fresh(), [
+      { type: 'bid', seat: 0, value: 18 },
+      { type: 'pass', seat: 1 },
+      { type: 'bid', seat: 2, value: 19 },
+    ]);
+    assert.equal(state.hand?.auction.turn, 0);
+    state = applyAll(state, [
+      { type: 'hold', seat: 0 },
+      { type: 'pass', seat: 2 },
+    ]);
+    assert.equal(state.hand?.auction.highBidder, 0);
+    assert.equal(state.hand?.auction.turn, 3);
+    state = apply(state, { type: 'pass', seat: 3 });
+    assert.equal(state.phase, 'CHOOSE_TRUMP');
+    assert.equal(state.hand?.bidder, 0);
+    assert.equal(state.hand?.bid, 19);
+  });
+
+  it('ends the auction when the last seat wins its duel', () => {
+    const state = applyAll(fresh(), [
       { type: 'pass', seat: 0 },
       { type: 'bid', seat: 1, value: 16 },
       { type: 'pass', seat: 2 },
-      { type: 'pass', seat: 3 },
-      { type: 'bid', seat: 0, value: 17 },
-    ]);
-    assert.equal(state.phase, 'BIDDING');
-    assert.equal(state.hand?.auction.consecutivePasses, 0);
-    state = applyAll(state, [
+      { type: 'bid', seat: 3, value: 17 },
       { type: 'pass', seat: 1 },
-      { type: 'pass', seat: 2 },
-      { type: 'pass', seat: 3 },
     ]);
-    assert.equal(state.hand?.bidder, 0);
+    assert.equal(state.phase, 'CHOOSE_TRUMP');
+    assert.equal(state.hand?.bidder, 3);
     assert.equal(state.hand?.bid, 17);
+  });
+
+  it('lets a duel run to 28 without a hold at the top', () => {
+    const state = applyAll(fresh(), [
+      { type: 'bid', seat: 0, value: 27 },
+      { type: 'bid', seat: 1, value: 28 },
+    ]);
+    assert.equal(state.phase, 'CHOOSE_TRUMP');
+    assert.equal(state.hand?.bidder, 1);
   });
 
   it('ends immediately at the maximum bid', () => {

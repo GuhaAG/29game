@@ -151,7 +151,7 @@ test process and drives four independent clients over HTTP and WebSocket.
 Coverage highlights, mapped to `SPEC.md` §11:
 
 - **Engine** — deck uniqueness and 28 points; auction termination including three opening passes,
-  raises after passing, and the maximum bid; follow-suit enforcement; reveal only when void and never
+  hold-and-raise duels with passed seats staying out, and the maximum bid; follow-suit enforcement; reveal only when void and never
   while leading; forced trump after a reveal; trump applying to already-played cards of the reveal
   trick; completed tricks unchanged; annulment; marriage in all its edge cases (split honours, honour
   already played, wrong-team trick, skipped then later declared, duplicates, clamped targets);

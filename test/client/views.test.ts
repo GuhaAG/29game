@@ -87,7 +87,7 @@ function snapshotFixture(overrides: Record<string, unknown> = {}): any {
         trumpStatus: 'hidden',
         trump: 'S',
         revealedBy: null,
-        auction: { turn: 0, highBid: 18, highBidder: 0, history: [{ seat: 0, action: 'bid', value: 18 }] },
+        auction: { turn: 0, highBid: 18, highBidder: 0, stage: 'challenge', history: [{ seat: 0, action: 'bid', value: 18 }] },
         doubling: { actor: null, doubledBy: 1, redoubledBy: null, defenderDecisions: [], bidderDecisions: [] },
         turn: 0,
         currentTrick: { index: 0, leader: 0, plays: [] },
@@ -104,6 +104,7 @@ function snapshotFixture(overrides: Record<string, unknown> = {}): any {
       actions: {
         bids: [],
         canPass: false,
+        canHold: false,
         canChooseTrump: false,
         canDouble: false,
         canRedouble: false,
@@ -321,5 +322,59 @@ describe('client screens', () => {
       assert.equal(node.tagName, 'BUTTON', 'click targets are real buttons');
     }
     assert.equal(element.querySelectorAll('a[href="#"]').length, 0);
+  });
+
+  describe('auction controls', () => {
+    function biddingState(actionOverrides: Record<string, unknown>, auction: Record<string, unknown>) {
+      const state = baseState();
+      const snapshot = snapshotFixture();
+      snapshot.match.phase = 'BIDDING';
+      snapshot.match.hand.auction = { turn: 0, highBid: 19, highBidder: 1, stage: 'respond', history: [], ...auction };
+      snapshot.match.actions = { ...snapshot.match.actions, ...actionOverrides };
+      state.snapshot = snapshot;
+      return state;
+    }
+
+    function recordingActions(sent: [string, unknown][]) {
+      return new Proxy(
+        {},
+        { get: (_, name) => (name === 'send' ? (type: string, payload?: unknown) => sent.push([type, payload]) : () => undefined) },
+      ) as import('../../src/client/views').Actions;
+    }
+
+    it('offers Hold and Pass, with the raise in the prompt, when outbid', () => {
+      const sent: [string, unknown][] = [];
+      const state = biddingState({ bids: [], canHold: true, canPass: true }, {});
+      const element = views.roomView(state, recordingActions(sent));
+      const content = element.textContent ?? '';
+      assert.match(content, /Left raised to 19\. Hold at that bid, or pass\./);
+      assert.equal(element.querySelectorAll('.bid-grid button').length, 0);
+      const buttons = [...element.querySelectorAll('button')];
+      const hold = buttons.find((b) => /Hold at 19/.test(b.textContent ?? ''));
+      const pass = buttons.find((b) => b.textContent === 'Pass');
+      assert.ok(hold && pass);
+      hold.click();
+      pass.click();
+      assert.deepEqual(sent, [['hold', undefined], ['pass', undefined]]);
+    });
+
+    it('drops a stale bid selection once the floor has moved past it', () => {
+      const sent: [string, unknown][] = [];
+      const state = biddingState(
+        { bids: [20, 21, 22], canHold: false, canPass: true },
+        { stage: 'raise', turn: 0, highBid: 19, highBidder: 0 },
+      );
+      state.selectedBid = 19;
+      const element = views.roomView(state, recordingActions(sent));
+      const confirm = element.querySelector('[data-focus="bid-confirm"]') as HTMLButtonElement;
+      assert.equal(confirm.disabled, true);
+      assert.equal(element.querySelectorAll('[aria-pressed="true"]').length, 0);
+      state.selectedBid = 21;
+      const again = views.roomView(state, recordingActions(sent));
+      const enabled = again.querySelector('[data-focus="bid-confirm"]') as HTMLButtonElement;
+      assert.equal(enabled.disabled, false);
+      enabled.click();
+      assert.deepEqual(sent, [['bid', { value: 21 }]]);
+    });
   });
 });

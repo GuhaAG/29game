@@ -105,7 +105,10 @@ export function startHand(state: MatchState, deck: CardId[], dealer?: Seat): App
       turn: openingSeat,
       highBid: null,
       highBidder: null,
-      consecutivePasses: 0,
+      stage: 'open',
+      defender: null,
+      cursor: openingSeat,
+      passed: [],
       history: [],
     },
     bidder: null,
@@ -145,6 +148,23 @@ export function startHand(state: MatchState, deck: CardId[], dealer?: Seat): App
       { type: 'dealtFirst' },
     ],
   };
+}
+
+/**
+ * Brings the next seat in clockwise order into the auction against the current
+ * high bid, or ends the auction once the dealer, the last seat, has been faced.
+ */
+function advanceAuction(state: MatchState, hand: HandState, events: EngineEvent[]): void {
+  const auction = hand.auction;
+  auction.defender = null;
+  if (auction.cursor === hand.dealer) {
+    endAuction(state, hand, events);
+    return;
+  }
+  auction.cursor = nextSeat(auction.cursor);
+  auction.stage = 'challenge';
+  auction.turn = auction.cursor;
+  hand.turn = auction.cursor;
 }
 
 function endAuction(state: MatchState, hand: HandState, events: EngineEvent[]): void {
@@ -335,43 +355,67 @@ export function applyCommand(state: MatchState, command: EngineCommand): ApplyRe
   switch (command.type) {
     case 'bid': {
       if (next.phase !== 'BIDDING' || !hand) fail('WRONG_PHASE', 'bidding is closed');
-      if (hand.auction.turn !== seat) fail('NOT_YOUR_TURN', 'not your turn to bid');
+      const auction = hand.auction;
+      if (auction.turn !== seat) fail('NOT_YOUR_TURN', 'not your turn to bid');
+      if (auction.stage === 'respond') fail('ILLEGAL_MOVE', 'hold or pass against the raise');
       if (!legalBids(next).includes(command.value)) fail('ILLEGAL_MOVE', 'bid is not legal');
-      hand.auction.highBid = command.value;
-      hand.auction.highBidder = seat;
-      hand.auction.consecutivePasses = 0;
-      hand.auction.history.push({ seat, action: 'bid', value: command.value });
+      // After a held raise the defender stays the same; a fresh challenge sets one.
+      if (auction.stage === 'challenge') auction.defender = auction.highBidder;
+      auction.highBid = command.value;
+      auction.highBidder = seat;
+      auction.history.push({ seat, action: 'bid', value: command.value });
       events.push({ type: 'bidPlaced', seat, value: command.value });
       if (command.value === PROFILE.maxBid) {
         endAuction(next, hand, events);
+      } else if (auction.stage === 'open') {
+        advanceAuction(next, hand, events);
       } else {
-        hand.auction.turn = nextSeat(seat);
-        hand.turn = hand.auction.turn;
+        auction.stage = 'respond';
+        auction.turn = auction.defender as Seat;
+        hand.turn = auction.turn;
       }
+      break;
+    }
+    case 'hold': {
+      if (next.phase !== 'BIDDING' || !hand) fail('WRONG_PHASE', 'bidding is closed');
+      const auction = hand.auction;
+      if (auction.turn !== seat) fail('NOT_YOUR_TURN', 'not your turn to bid');
+      if (auction.stage !== 'respond') fail('ILLEGAL_MOVE', 'there is no raise to hold');
+      auction.history.push({ seat, action: 'hold', value: auction.highBid as number });
+      events.push({ type: 'held', seat, value: auction.highBid as number });
+      auction.stage = 'raise';
+      auction.turn = auction.highBidder as Seat;
+      hand.turn = auction.turn;
       break;
     }
     case 'pass': {
       if (next.phase !== 'BIDDING' || !hand) fail('WRONG_PHASE', 'bidding is closed');
-      if (hand.auction.turn !== seat) fail('NOT_YOUR_TURN', 'not your turn to bid');
-      hand.auction.history.push({ seat, action: 'pass' });
-      hand.auction.consecutivePasses += 1;
+      const auction = hand.auction;
+      if (auction.turn !== seat) fail('NOT_YOUR_TURN', 'not your turn to bid');
+      auction.history.push({ seat, action: 'pass' });
+      auction.passed.push(seat);
       events.push({ type: 'passed', seat });
-      if (hand.auction.highBid === null && hand.auction.consecutivePasses === 3) {
-        hand.auction.highBid = PROFILE.forcedDealerBid;
-        hand.auction.highBidder = hand.dealer;
-        hand.auction.history.push({
-          seat: hand.dealer,
-          action: 'bid',
-          value: PROFILE.forcedDealerBid,
-          forced: true,
-        });
-        events.push({ type: 'bidPlaced', seat: hand.dealer, value: PROFILE.forcedDealerBid, forced: true });
-        endAuction(next, hand, events);
-      } else if (hand.auction.highBid !== null && hand.auction.consecutivePasses === 3) {
-        endAuction(next, hand, events);
+      if (auction.stage === 'open') {
+        if (auction.passed.length === 3) {
+          auction.highBid = PROFILE.forcedDealerBid;
+          auction.highBidder = hand.dealer;
+          auction.history.push({
+            seat: hand.dealer,
+            action: 'bid',
+            value: PROFILE.forcedDealerBid,
+            forced: true,
+          });
+          events.push({ type: 'bidPlaced', seat: hand.dealer, value: PROFILE.forcedDealerBid, forced: true });
+          endAuction(next, hand, events);
+        } else {
+          auction.cursor = nextSeat(seat);
+          auction.turn = auction.cursor;
+          hand.turn = auction.turn;
+        }
       } else {
-        hand.auction.turn = nextSeat(seat);
-        hand.turn = hand.auction.turn;
+        // The passer drops out. After a held raise the defender keeps the held bid.
+        if (auction.stage === 'raise') auction.highBidder = auction.defender;
+        advanceAuction(next, hand, events);
       }
       break;
     }

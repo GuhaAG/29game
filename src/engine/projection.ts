@@ -9,6 +9,7 @@ import {
 } from './legal';
 import type {
   AuctionRecord,
+  AuctionStage,
   CompletedTrick,
   CurrentTrick,
   DoublingState,
@@ -28,6 +29,7 @@ export type TrumpStatus = 'none' | 'hidden' | 'revealed';
 export interface ViewActions {
   bids: number[];
   canPass: boolean;
+  canHold: boolean;
   canChooseTrump: boolean;
   canDouble: boolean;
   canRedouble: boolean;
@@ -57,6 +59,7 @@ export interface HandView {
     turn: Seat;
     highBid: number | null;
     highBidder: Seat | null;
+    stage: AuctionStage;
     history: AuctionRecord[];
   };
   doubling: {
@@ -98,6 +101,7 @@ function noActions(): ViewActions {
   return {
     bids: [],
     canPass: false,
+    canHold: false,
     canChooseTrump: false,
     canDouble: false,
     canRedouble: false,
@@ -154,6 +158,7 @@ export function projectFor(state: MatchState, seat: Seat): MatchView {
         turn: hand.auction.turn,
         highBid: hand.auction.highBid,
         highBidder: hand.auction.highBidder,
+        stage: hand.auction.stage,
         history: hand.auction.history,
       },
       doubling: {
@@ -185,7 +190,8 @@ export function projectFor(state: MatchState, seat: Seat): MatchView {
     switch (state.phase) {
       case 'BIDDING':
         if (hand.auction.turn === seat) {
-          actions.bids = legalBids(state);
+          if (hand.auction.stage === 'respond') actions.canHold = true;
+          else actions.bids = legalBids(state);
           actions.canPass = true;
         }
         break;
