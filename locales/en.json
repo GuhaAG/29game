@@ -34,7 +34,7 @@
     "Team B"
   ],
   "seat": {
-    "label": "Seat {n}",
+    "label": "Player {n}",
     "withTeam": "{seat} — {team}",
     "short": "{seat} · {team}",
     "takenBy": "{seat} — {team}: {name} (taken)"
@@ -106,8 +106,8 @@
   "create": {
     "heading": "Create a game",
     "nameHint": "Up to 24 characters. Everyone picks their own name.",
-    "seatLegend": "Your seat",
-    "seatHint": "Seats 1 and 3 are partners; seats 2 and 4 are partners.",
+    "seatLegend": "Your player number",
+    "seatHint": "Players 1 and 3 are partners; players 2 and 4 are partners.",
     "submit": "Create game"
   },
   "gate": {
@@ -116,22 +116,22 @@
     "passwordLabel": "Room password",
     "passwordHint": "Upper or lower case, with or without the hyphens.",
     "submit": "Continue",
-    "lostSeatSummary": "Lost your seat after closing the browser?",
-    "lostSeatBody": "Ask the host for a recovery code for your seat, then enter it here.",
+    "lostSeatSummary": "Lost access after closing the browser?",
+    "lostSeatBody": "Ask the host for a recovery code for your player, then enter it here.",
     "recoveryLabel": "Recovery code",
-    "recoverButton": "Recover my seat"
+    "recoverButton": "Rejoin as my player"
   },
   "join": {
-    "heading": "Choose your name and seat",
-    "freeSeats": "Free seats",
-    "full": "Every seat is taken in this room.",
+    "heading": "Choose your name and player number",
+    "freeSeats": "Available players",
+    "full": "All four players have joined this room.",
     "submit": "Join this table"
   },
   "recover": {
-    "heading": "Recover your seat",
+    "heading": "Rejoin as your player",
     "codeLabel": "One-time recovery code",
     "codeHint": "The host can issue one after checking who you are.",
-    "submit": "Recover my seat"
+    "submit": "Rejoin as my player"
   },
   "closed": {
     "heading": "This room is closed",
@@ -142,14 +142,14 @@
   "connection": {
     "reconnecting": "Reconnecting—actions paused",
     "connecting": "Connecting…",
-    "replaced": "This seat is open in another tab. This view is no longer active.",
+    "replaced": "Your player is active in another tab. This view is no longer active.",
     "disconnected": "Disconnected.",
     "expiryWarning": "This room closes soon unless someone acts."
   },
   "room": {
     "headingLobby": "Lobby",
     "headingTable": "Table",
-    "youAre": "You are {name}, {seat}, {team}. Rules version {version}.",
+    "youAre": "You are {name}, {team}. Rules version {version}.",
     "recentActions": "Recent actions"
   },
   "lobby": {
@@ -161,7 +161,7 @@
     "notReady": "Not ready",
     "detailsHeading": "Your details",
     "changeName": "Change my name",
-    "clearsReady": "Changing your name or seat clears everyone’s ready mark.",
+    "clearsReady": "Changing your name or player number clears everyone’s ready mark.",
     "moveTo": "Move to {seat} ({team})",
     "readyButton": "I am ready",
     "unreadyButton": "Not ready yet"
@@ -175,7 +175,7 @@
     "start": "Start match",
     "newPassword": "New password",
     "closeRoom": "Close room",
-    "startHint": "Start becomes available when all four seats are filled, connected and ready.",
+    "startHint": "Start becomes available when all four players have joined, are connected and ready.",
     "remove": "Remove {name}",
     "recoveryFor": "One-time recovery code for {seat} (valid five minutes):",
     "recoveryGive": "Give it to that person directly. It works once.",
@@ -323,12 +323,12 @@
     "rematch": "Rematch",
     "waitingOthers": "Waiting for the others",
     "leave": "Leave",
-    "rematchHint": "A rematch keeps the same seats and resets both scores."
+    "rematchHint": "A rematch keeps the same players and resets both scores."
   },
   "notices": {
     "roomCreated": "Room created. Share the link and password separately.",
     "passwordReplaced": "The room password has been replaced. Share the new one privately.",
-    "seatRecovered": "Your seat is back. Any older session for it has been signed out.",
+    "seatRecovered": "You have rejoined. Any older session for your player has been signed out.",
     "reconnecting": "Reconnecting—actions paused. Your action was not sent.",
     "copied": "{label} copied. Share it privately.",
     "copyFailed": "Copy failed. Select the {label} and copy it manually."
@@ -355,7 +355,7 @@
     "matchStarted": "The match has started.",
     "memberJoined": "{name} joined.",
     "memberRenamed": "{name} changed their name.",
-    "memberRemoved": "Seat {n} was removed by the host.",
+    "memberRemoved": "Player {n} was removed by the host.",
     "hostTransferred": "{player} is now the host.",
     "passwordRotated": "The host changed the room password.",
     "matchAbandoned": "The match was ended with no winner."
@@ -372,10 +372,10 @@
         ]
       },
       {
-        "heading": "Seats and teams",
+        "heading": "Players and teams",
         "points": [
-          "Four players, seats 1–4 clockwise. Seats opposite one another are partners.",
-          "Seats and teams are locked once the host starts the match."
+          "Four players, numbered 1–4 clockwise. Players opposite one another are partners.",
+          "Players and teams are locked once the host starts the match."
         ]
       },
       {
@@ -447,20 +447,20 @@
     "unknownRequest": "Unknown request.",
     "malformed": "Malformed request.",
     "tooLarge": "That request was too large.",
-    "chooseSeatOfFour": "Choose one of the four seats.",
-    "chooseSeat": "Choose a seat.",
-    "chooseSeatToRemove": "Choose a seat to remove.",
+    "chooseSeatOfFour": "Choose one of the four players.",
+    "chooseSeat": "Choose a player.",
+    "chooseSeatToRemove": "Choose a player to remove.",
     "cannotRemoveSelf": "You cannot remove yourself.",
-    "seatAlreadyEmpty": "That seat is already empty.",
-    "seatEmpty": "That seat is empty.",
+    "seatAlreadyEmpty": "No one has joined as that player.",
+    "seatEmpty": "No one has joined as that player.",
     "noMatchToEnd": "There is no match to end.",
     "everyoneConnected": "Everyone is connected; the match can continue.",
     "unableToContinue": "Unable to continue the match.",
     "nameNotAllowed": "That screen name is not allowed.",
     "nameTaken": "That screen name is already used in this room.",
-    "seatTaken": "That seat is already taken.",
-    "seatJustTaken": "That seat was just taken. Pick another one.",
-    "fillAllSeats": "All four seats must be filled before starting.",
+    "seatTaken": "That player is already taken.",
+    "seatJustTaken": "That player was just taken. Pick another one.",
+    "fillAllSeats": "All four players must join before starting.",
     "everyoneReady": "Everyone must be connected and ready before starting.",
     "notInRoom": "You are no longer part of this room.",
     "requestReused": "That request was already used for a different action.",
@@ -472,8 +472,8 @@
     "notFound": "Not found.",
     "roomNotAccepting": "This room is not accepting new players.",
     "matchAlreadyStartedRoom": "This match has already started.",
-    "allSeatsTaken": "All four seats are taken.",
-    "seatGone": "That seat is no longer in the room.",
+    "allSeatsTaken": "All four players have already joined.",
+    "seatGone": "That player is no longer in the room.",
     "staleState": "The table changed while you were deciding.",
     "paused": "Play is paused until everyone is reconnected.",
     "secureRequired": "A secure connection is required.",
@@ -490,7 +490,7 @@
     "engineNotYourTurn": "It is not your turn.",
     "engineWrongPhase": "That action is not available right now.",
     "engineIllegal": "That move is not allowed.",
-    "seatReplaced": "This seat was opened in another tab or window. This view is no longer active.",
+    "seatReplaced": "Your player is active in another tab or window. This view is no longer active.",
     "expiringSoon": "This room will close soon if nobody acts.",
     "nameEmpty": "Enter a screen name.",
     "nameBadChars": "That name contains characters that are not allowed.",

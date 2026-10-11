@@ -142,13 +142,13 @@ describe('client screens', () => {
     const element = views.createView(baseState(), noopActions);
     assert.ok(element.querySelector('label[for="name"]'));
     assert.equal(element.querySelectorAll('input[name="seat"]').length, 4);
-    assert.match(element.textContent ?? '', /Seat 1 — Team A/);
+    assert.match(element.textContent ?? '', /Player 1 — Team A/);
   });
 
   it('asks only for the password at the gate and never shows the roster', () => {
     const element = views.gateView(baseState(), noopActions);
     assert.ok(element.querySelector('input[type="password"]'));
-    assert.doesNotMatch(element.textContent ?? '', /Seat 2/);
+    assert.doesNotMatch(element.textContent ?? '', /Player 2/);
     assert.match(element.textContent ?? '', /Recovery code/, 'recovery is reachable from the gate');
   });
 
@@ -175,6 +175,9 @@ describe('client screens', () => {
     assert.match(element.querySelector('.seat-box.partner')?.textContent ?? '', /Partner/);
     assert.match(element.textContent ?? '', /Trick.*1 of 8/s);
     assert.match(element.textContent ?? '', /×2/, 'the stake is visible');
+    assert.match(element.querySelector('.status-line')?.textContent ?? '', /Dealer Right/);
+    assert.match(element.querySelector('.status-line')?.textContent ?? '', /18 by You/);
+    assert.doesNotMatch(element.textContent ?? '', /Player [1-4]/);
 
     const cardButtons = [...element.querySelectorAll('button.card')];
     assert.equal(cardButtons.length, 8);
@@ -231,6 +234,7 @@ describe('client screens', () => {
     state.snapshot = snapshot;
     const element = views.roomView(state, noopActions);
     assert.match(element.textContent ?? '', /Between tricks/);
+    assert.match(element.textContent ?? '', /Partner won trick 1/);
     assert.ok(element.querySelector('button[data-focus="continue"]'));
     assert.equal(element.querySelector('button[data-focus="declare"]'), null);
   });

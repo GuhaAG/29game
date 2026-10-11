@@ -51,6 +51,10 @@ function seatLabel(seat: number): string {
   return t('seat.label', { n: seat + 1 });
 }
 
+function playerLabel(snapshot: Snapshot, seat: number): string {
+  return snapshot.seats.find((player) => player.seat === seat)?.name || seatLabel(seat);
+}
+
 function suitName(suit: string): string {
   return t(`suits.${suit}.name`);
 }
@@ -586,7 +590,7 @@ function hostPanel(state: UiState, actions: Actions): HTMLElement {
       ? h(
           'div',
           { class: 'notice' },
-          h('p', {}, t('host.recoveryFor', { seat: seatLabel(state.recovery.seat) })),
+          h('p', {}, t('host.recoveryFor', { seat: playerLabel(snapshot, state.recovery.seat) })),
           h('p', {}, h('code', { class: 'secret' }, state.recovery.code)),
           h('p', { class: 'hint' }, t('host.recoveryGive')),
         )
@@ -611,12 +615,12 @@ function statusLine(snapshot: Snapshot): HTMLElement {
     'ul',
     { class: 'status-line' },
     h('li', {}, `${t('status.hand')} `, h('strong', {}, String(match?.handNumber ?? 1))),
-    h('li', {}, `${t('status.dealer')} `, h('strong', {}, seatLabel(match?.dealer ?? 0))),
+    h('li', {}, `${t('status.dealer')} `, h('strong', {}, playerLabel(snapshot, match?.dealer ?? 0))),
     h(
       'li',
       {},
       `${t('status.contract')} `,
-      h('strong', {}, hand?.bid ? t('status.contractValue', { bid: hand.bid, seat: seatLabel(hand.bidder as number) }) : t('status.contractAuction')),
+      h('strong', {}, hand?.bid ? t('status.contractValue', { bid: hand.bid, seat: playerLabel(snapshot, hand.bidder as number) }) : t('status.contractAuction')),
     ),
     h('li', {}, `${t('status.stake')} `, h('strong', {}, t('status.stakeValue', { stake: hand?.stake ?? 1 }))),
     h('li', {}, `${t('status.trump')} `, h('strong', {}, trumpText)),
@@ -645,7 +649,7 @@ function seatBox(snapshot: Snapshot, seat: number, position: string): HTMLElemen
     },
     h('span', { class: 'seat-avatar', 'aria-hidden': 'true' }, info?.name?.trim().slice(0, 2).toUpperCase() || '·'),
     h('span', { class: 'seat-name' }, info?.name ?? t('common.empty')),
-    h('span', { class: 'flags' }, t('seat.short', { seat: seatLabel(seat), team: teamName(seat % 2) })),
+    h('span', { class: 'flags' }, teamName(seat % 2)),
     hand ? h('span', { class: 'flags' }, cardsCount(hand.cardCounts[seat as 0 | 1 | 2 | 3] ?? 0)) : null,
     flags.length > 0 ? h('span', { class: 'flags' }, flags.join(' · ')) : null,
     isTurn ? h('span', { class: 'flags turn-label' }, t('table.toPlay')) : null,
@@ -666,7 +670,7 @@ function trickArea(snapshot: Snapshot): HTMLElement {
             'span',
             { style: 'text-align:center' },
             card(play.card as CardId, { played: true }),
-            h('span', { class: 'flags' }, seatLabel(play.seat)),
+            h('span', { class: 'flags' }, playerLabel(snapshot, play.seat)),
           ),
         )),
   );
@@ -688,7 +692,7 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
       h(
         'p',
         {},
-        t('actions.paused.waiting', { names: (snapshot.paused?.seats ?? []).map((seat) => snapshot.seats[seat]?.name ?? seatLabel(seat)).join(', ') }),
+        t('actions.paused.waiting', { names: (snapshot.paused?.seats ?? []).map((seat) => playerLabel(snapshot, seat)).join(', ') }),
       ),
       h(
         'p',
@@ -704,7 +708,7 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
                 h(
                   'button',
                   { onClick: () => actions.send('issueRecovery', { seat }) },
-                  t('actions.paused.recoveryFor', { seat: seatLabel(seat) }),
+                  t('actions.paused.recoveryFor', { seat: playerLabel(snapshot, seat) }),
                 ),
               ),
             )
@@ -715,7 +719,7 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
         ? h(
             'div',
             { class: 'notice' },
-            h('p', {}, t('actions.paused.recoveryShown', { seat: seatLabel(state.recovery.seat) })),
+            h('p', {}, t('actions.paused.recoveryShown', { seat: playerLabel(snapshot, state.recovery.seat) })),
             h('p', {}, h('code', { class: 'secret' }, state.recovery.code)),
           )
         : null,
@@ -840,7 +844,7 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
           'div',
           { class: 'card-panel', role: 'status' },
           h('h2', {}, isRedouble ? t('actions.redouble.headingWait') : t('actions.double.headingWait')),
-          h('p', {}, t('actions.waitingDecision', { name: actor === null ? t('actions.aDecision') : (snapshot.seats[actor]?.name ?? seatLabel(actor)) })),
+          h('p', {}, t('actions.waitingDecision', { name: actor === null ? t('actions.aDecision') : (playerLabel(snapshot, actor)) })),
         );
       }
       return h(
@@ -886,7 +890,7 @@ function actionPanel(state: UiState, actions: Actions): HTMLElement {
           h(
             'p',
             {},
-            t('actions.between.won', { seat: seatLabel(hand.tricks[hand.ack.trickIndex]?.winner ?? 0), n: hand.ack.trickIndex + 1, points: hand.tricks[hand.ack.trickIndex]?.points ?? 0 }),
+            t('actions.between.won', { seat: playerLabel(snapshot, hand.tricks[hand.ack.trickIndex]?.winner ?? 0), n: hand.ack.trickIndex + 1, points: hand.tricks[hand.ack.trickIndex]?.points ?? 0 }),
           ),
           h(
             'div',
@@ -980,14 +984,14 @@ function auctionHistory(snapshot: Snapshot): HTMLElement {
         'li',
         {},
         entry.action === 'pass'
-          ? t('actions.auction.entryPassed', { player: snapshot.seats[entry.seat]?.name ?? seatLabel(entry.seat) })
+          ? t('actions.auction.entryPassed', { player: playerLabel(snapshot, entry.seat) })
           : entry.action === 'hold'
           ? t('actions.auction.entryHeld', {
-              player: snapshot.seats[entry.seat]?.name ?? seatLabel(entry.seat),
+              player: playerLabel(snapshot, entry.seat),
               value: entry.value as number,
             })
           : t(entry.forced ? 'actions.auction.entryBidForced' : 'actions.auction.entryBid', {
-              player: snapshot.seats[entry.seat]?.name ?? seatLabel(entry.seat),
+              player: playerLabel(snapshot, entry.seat),
               value: entry.value as number,
             }),
       ),
@@ -1002,12 +1006,12 @@ function handResultPanel(state: UiState, actions: Actions): HTMLElement {
   if (!result) return h('div', { class: 'card-panel' }, h('p', {}, t('result.scoring')));
   const rows: [string, string][] = result.annulled
     ? [
-        [t('result.bid'), t('result.bidValue', { bid: result.bid, seat: seatLabel(result.bidder) })],
+        [t('result.bid'), t('result.bidValue', { bid: result.bid, seat: playerLabel(snapshot, result.bidder) })],
         [t('result.outcome'), t('result.annulledOutcome')],
         [t('result.matchPoints'), t('result.noChange')],
       ]
     : [
-        [t('result.bid'), t('result.bidValueTeam', { bid: result.bid, seat: seatLabel(result.bidder), team: teamName(result.bidderTeam) })],
+        [t('result.bid'), t('result.bidValueTeam', { bid: result.bid, seat: playerLabel(snapshot, result.bidder), team: teamName(result.bidderTeam) })],
         [t('result.pairAdjustment'), result.pairAdjustment === 0 ? t('result.none') : `${result.pairAdjustment > 0 ? '+' : ''}${result.pairAdjustment}`],
         [t('result.target'), String(result.target)],
         [t('result.cardPoints', { team: teamName(0) }), String(result.capturedPoints[0])],
@@ -1090,7 +1094,7 @@ function matchResultPanel(state: UiState, actions: Actions): HTMLElement {
             'tr',
             {},
             h('td', {}, String(entry.handNumber)),
-            h('td', {}, t('matchResult.contractValue', { bid: entry.bid, seat: seatLabel(entry.bidder), stake: entry.stake })),
+            h('td', {}, t('matchResult.contractValue', { bid: entry.bid, seat: playerLabel(snapshot, entry.bidder), stake: entry.stake })),
             h('td', {}, entry.annulled ? t('matchResult.annulled') : entry.contractMade ? t('matchResult.made') : t('matchResult.failed')),
             h('td', {}, t('matchResult.scoreValue', { a: entry.scoresAfter[0], b: entry.scoresAfter[1] })),
           ),
@@ -1210,7 +1214,7 @@ export function roomView(state: UiState, actions: Actions): HTMLElement {
       h(
         'p',
         { class: 'hint' },
-        t('room.youAre', { name: you.name, seat: seatLabel(you.seat), team: teamName(you.team), version: snapshot.room.rulesVersion }),
+        t('room.youAre', { name: you.name, seat: playerLabel(snapshot, you.seat), team: teamName(you.team), version: snapshot.room.rulesVersion }),
       ),
     ),
   );
