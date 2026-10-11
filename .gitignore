@@ -3,3 +3,4 @@ dist/
 public/app.js
 public/app.js.map
 .env
+.npm-cache/
