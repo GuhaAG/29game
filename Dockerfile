@@ -1,5 +1,5 @@
 # Single-stage is enough: no native modules, one runtime dependency.
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -10,7 +10,7 @@ COPY public ./public
 COPY locales ./locales
 RUN npm run build && npm prune --omit=dev
 
-FROM node:22-alpine
+FROM node:24-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 # Images are deployed behind a platform proxy that terminates TLS, so honour its
