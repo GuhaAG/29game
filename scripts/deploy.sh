@@ -9,7 +9,8 @@ set -euo pipefail
 HOST="${DEPLOY_HOST:-134.209.100.100}"
 USER="${DEPLOY_USER:-deploy}"
 KEY="${DEPLOY_KEY:-$HOME/.ssh/twentynine_deploy}"
-URL="${DEPLOY_URL:-https://134-209-100-100.sslip.io}"
+URL="${DEPLOY_URL:-https://twentyninegame.com}"
+BACKUP_URL="https://134-209-100-100.sslip.io"
 SSH_OPTS="-i $KEY -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
 
 echo "==> building"
@@ -31,6 +32,10 @@ echo "==> waiting for health"
 for attempt in $(seq 1 20); do
   if node -e "fetch('$URL/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null; then
     echo "==> live at $URL"
+    # Backup hostname shares the droplet; warn only, never fail the deploy.
+    if ! node -e "fetch('$BACKUP_URL/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" 2>/dev/null; then
+      echo "!! warning: backup hostname $BACKUP_URL is not healthy" >&2
+    fi
     exit 0
   fi
   sleep 2

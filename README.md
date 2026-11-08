@@ -57,8 +57,12 @@ key generated at boot — since no room outlives the process, there is no key to
 
 ### Deployment
 
-**Live instance:** https://134-209-100-100.sslip.io — a $4/month DigitalOcean droplet
-(`twentynine`, 512 MB, Singapore). Deploy a change with:
+**Live instance:** https://twentyninegame.com — a $4/month DigitalOcean droplet
+(`twentynine`, 512 MB, Singapore). https://134-209-100-100.sslip.io is a backup hostname on the same
+droplet: it protects against DNS or domain problems, not droplet outages. Both names reach the same
+process, so rooms are shared between them; session cookies are per-hostname, though, so a player
+who switches hostnames mid-game must rejoin or recover their seat. DNS is at Porkbun:
+`A @ -> 134.209.100.100`, `CNAME www -> apex`. Deploy a change with:
 
 ```bash
 ./scripts/deploy.sh          # build, ship, restart, verify health
@@ -66,10 +70,12 @@ key generated at boot — since no room outlives the process, there is no key to
 
 How that box is put together, should it ever need rebuilding:
 
-- **Caddy** terminates TLS on ports 80/443 and reverse-proxies to the app. It obtains and renews a
-  real Let's Encrypt certificate automatically. The hostname is an `sslip.io` name that resolves to
-  the droplet's own IP, so no domain purchase is needed; point a real domain at the IP and change the
-  first line of `/etc/caddy/Caddyfile` to use it instead.
+- **Caddy** terminates TLS on ports 80/443 and reverse-proxies to the app. The Caddyfile lists
+  `twentyninegame.com` and the `sslip.io` name (which resolves to the droplet's own IP) as sites, both
+  reverse-proxying to `127.0.0.1:3000`, with `www.twentyninegame.com` redirecting to the apex. Caddy
+  obtains and renews a real Let's Encrypt certificate for each. `ALLOWED_ORIGINS` must stay unset (or
+  list both origins): the server's origin check otherwise defaults to the request `Host` header (see
+  `expectedOrigins` in `src/server/http.ts`).
 - **The app** runs under systemd as the unprivileged `twentynine` user, bound to `127.0.0.1:3000`
   only, with `NODE_ENV=production` (so HTTPS is required and cookies are Secure) and `TRUST_PROXY=1`
   so Caddy's `X-Forwarded-Proto` is honoured. `ufw` allows only SSH, 80 and 443.

@@ -79,7 +79,7 @@ jobs:
       - name: Verify it came back
         if: steps.guard.outputs.ready == 'true'
         env:
-          URL: ${{ secrets.DEPLOY_URL || 'https://134-209-100-100.sslip.io' }}
+          URL: ${{ secrets.DEPLOY_URL || 'https://twentyninegame.com' }}
         run: |
           for attempt in $(seq 1 20); do
             code=$(curl -fsS -o /dev/null -w '%{http_code}' "$URL/healthz" || echo 000)
